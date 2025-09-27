@@ -14,7 +14,8 @@ import { Sidebar } from "./Sidebar";
 import { Suggestion } from "./Suggestion";
 import { ProgressBar } from "./ProgressBar";
 import { NavigationControls } from "./NavigationControls";
-import { questions } from "@/src/questions";
+import { MathRenderer } from "./MathRenderer";
+import { questions } from "@/src/questionsData";
 
 type AIFeedback = {
   isCorrect: boolean;
@@ -197,7 +198,7 @@ const Whiteboard = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           image: base64Image,
-          problemContext: currentQuestion.title, // Send current question as context
+          problemContext: currentQuestion.text, // Send current question as context
         }),
       });
 
@@ -290,8 +291,10 @@ const Whiteboard = () => {
             />
           </div>
           <div className="flex-grow text-white text-center font-semiobold">
-            {" "}
-            <h1 className="text-2xl font-bold">{currentQuestion.title}</h1>{" "}
+            <MathRenderer 
+              content={currentQuestion.title}
+              className="text-2xl font-bold"
+            />
           </div>
           {/* ... Right side tools (zoom, download, etc.) ... */}
           <div className="flex items-center gap-2">
