@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import {
   Pen,
   Eraser,
@@ -51,8 +51,6 @@ const Whiteboard = () => {
 
   const startDrawing = (x: number, y: number) => {
     if (contextRef.current) {
-      // --- MODIFIED: Clear old feedback when the user starts drawing again.
-      // This "re-arms" the polling mechanism.
       setFeedback(null);
 
       contextRef.current.beginPath();
@@ -66,8 +64,6 @@ const Whiteboard = () => {
       contextRef.current.closePath();
       setIsDrawing(false);
 
-      // --- MODIFIED: If feedback is already being shown, do not start a new timer.
-      // This stops polling until the user draws again.
       if (feedback) {
         return;
       }
@@ -83,19 +79,22 @@ const Whiteboard = () => {
     }
   };
 
-  const draw = (x: number, y: number) => {
-    if (!isDrawing || !contextRef.current) return;
+  const draw = useCallback(
+    (x: number, y: number) => {
+      if (!isDrawing || !contextRef.current) return;
 
-    if (feedbackTimerRef.current) {
-      clearTimeout(feedbackTimerRef.current);
-    }
+      if (feedbackTimerRef.current) {
+        clearTimeout(feedbackTimerRef.current);
+      }
 
-    contextRef.current.globalCompositeOperation = "source-over";
-    contextRef.current.strokeStyle = tool === "pen" ? color : "white";
-    contextRef.current.lineWidth = tool === "pen" ? lineWidth : lineWidth * 5;
-    contextRef.current.lineTo(x, y);
-    contextRef.current.stroke();
-  };
+      contextRef.current.globalCompositeOperation = "source-over";
+      contextRef.current.strokeStyle = tool === "pen" ? color : "white";
+      contextRef.current.lineWidth = tool === "pen" ? lineWidth : lineWidth * 5;
+      contextRef.current.lineTo(x, y);
+      contextRef.current.stroke();
+    },
+    [isDrawing, tool, color, lineWidth]
+  );
 
   const getCoordsFromEvent = (
     e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
@@ -132,12 +131,9 @@ const Whiteboard = () => {
     const { x, y } = getCoordsFromEvent(e);
     startDrawing(x, y);
   };
-  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return;
-    e.preventDefault();
-    const { x, y } = getCoordsFromEvent(e);
-    draw(x, y);
-  };
+
+  // --- MODIFIED: The onTouchMove prop is removed from the canvas JSX.
+  // We handle this event manually in a useEffect to prevent scrolling.
 
   const handleNextQuestion = () => {
     if (currentQuestionIndex < questions.length - 1) {
@@ -196,6 +192,31 @@ const Whiteboard = () => {
     return () => window.removeEventListener("resize", setCanvasDimensions);
   }, []);
 
+  // --- NEW: useEffect to handle touchmove events manually ---
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handleTouchMove = (e: TouchEvent) => {
+      // Prevent the browser from scrolling the page
+      e.preventDefault();
+
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      const x = (touch.clientX - rect.left) / scale;
+      const y = (touch.clientY - rect.top) / scale;
+      draw(x, y);
+    };
+
+    // Add the event listener with 'passive: false' to allow preventDefault
+    canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
+
+    // Cleanup: remove the event listener when the component unmounts
+    return () => {
+      canvas.removeEventListener("touchmove", handleTouchMove);
+    };
+  }, [draw, scale]); // Rerun if the draw function or scale changes
+
   useEffect(() => {
     if (contextRef.current) {
       contextRef.current.strokeStyle = color;
@@ -210,7 +231,6 @@ const Whiteboard = () => {
     const base64Image = imageDataUrl.split(",")[1];
 
     setIsLoadingFeedback(true);
-    // We no longer clear feedback here, it's cleared when the user starts drawing.
 
     try {
       const response = await fetch("http://127.0.0.1:5001/api/analyze-work", {
@@ -275,8 +295,7 @@ const Whiteboard = () => {
               }`}
               title="Pen"
             >
-              {" "}
-              <Pen size={20} className="text-white hover:cursor-pointer" />{" "}
+              <Pen size={20} className="text-white hover:cursor-pointer" />
             </button>
             <button
               onClick={() => setTool("eraser")}
@@ -285,11 +304,7 @@ const Whiteboard = () => {
               }`}
               title="Eraser"
             >
-              {" "}
-              <Eraser
-                size={20}
-                className="text-white hover:cursor-pointer"
-              />{" "}
+              <Eraser size={20} className="text-white hover:cursor-pointer" />
             </button>
             <input
               type="color"
@@ -309,8 +324,7 @@ const Whiteboard = () => {
             />
           </div>
           <div className="flex-grow text-white text-center font-semibold">
-            {" "}
-            <h1 className="text-2xl">{currentQuestion.title}</h1>{" "}
+            <h1 className="text-2xl">{currentQuestion.title}</h1>
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 p-2 rounded bg-gray-700 text-white text-sm">
@@ -331,41 +345,28 @@ const Whiteboard = () => {
               className="p-2 hover:bg-gray-700 rounded hover:cursor-pointer"
               title="Zoom In"
             >
-              {" "}
-              <ZoomIn
-                size={20}
-                className="text-white hover:cursor-pointer"
-              />{" "}
+              <ZoomIn size={20} className="text-white hover:cursor-pointer" />
             </button>
             <button
               onClick={() => handleZoom("out")}
               className="p-2 hover:bg-gray-700 rounded hover:cursor-pointer"
               title="Zoom Out"
             >
-              {" "}
-              <ZoomOut
-                size={20}
-                className="text-white hover:cursor-pointer"
-              />{" "}
+              <ZoomOut size={20} className="text-white hover:cursor-pointer" />
             </button>
             <button
               onClick={downloadCanvas}
               className="p-2 hover:bg-gray-700 rounded hover:cursor-pointer"
               title="Download"
             >
-              {" "}
-              <Download
-                size={20}
-                className="text-white hover:cursor-pointer"
-              />{" "}
+              <Download size={20} className="text-white hover:cursor-pointer" />
             </button>
             <button
               onClick={clearCanvas}
               className="p-2 hover:bg-red-500/20 text-red-400 rounded hover:cursor-pointer"
               title="Clear Canvas"
             >
-              {" "}
-              <Trash2 size={20} className="hover:cursor-pointer" />{" "}
+              <Trash2 size={20} className="hover:cursor-pointer" />
             </button>
           </div>
         </div>
@@ -379,7 +380,7 @@ const Whiteboard = () => {
             onMouseLeave={finishDrawing}
             onTouchStart={handleTouchStart}
             onTouchEnd={finishDrawing}
-            onTouchMove={handleTouchMove}
+            // onTouchMove is now handled by the useEffect hook
             className="cursor-crosshair"
             style={{
               transform: `scale(${scale})`,
