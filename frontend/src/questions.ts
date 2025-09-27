@@ -9,7 +9,7 @@ export interface Question {
 export const questions: Question[] = [
   {
     id: 1,
-    title: "Physics: Free-Body Diagram",
+    title: "x + 5 = 12",
     suggestions: [
       {
         type: "info",
