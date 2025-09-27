@@ -65,7 +65,7 @@ try:
 
     # Retrieves Google Vision and Gemini Clients
     vision_client = vision.ImageAnnotatorClient()
-    gemini_model = genai.GenerativeModel("gemini-2.5-flash-preview-05-20")
+    gemini_model = genai.GenerativeModel("gemini-2.5-flash")
 
 except Exception as e: # Catches Any Exception, Prints Error, and Ends App
     print(f"FATAL: Could not initialize Google API clients: {e}")
