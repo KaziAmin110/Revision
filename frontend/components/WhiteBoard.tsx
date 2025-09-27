@@ -132,9 +132,6 @@ const Whiteboard = () => {
     startDrawing(x, y);
   };
 
-  // --- MODIFIED: The onTouchMove prop is removed from the canvas JSX.
-  // We handle this event manually in a useEffect to prevent scrolling.
-
   const handleNextQuestion = () => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
@@ -192,13 +189,11 @@ const Whiteboard = () => {
     return () => window.removeEventListener("resize", setCanvasDimensions);
   }, []);
 
-  // --- NEW: useEffect to handle touchmove events manually ---
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const handleTouchMove = (e: TouchEvent) => {
-      // Prevent the browser from scrolling the page
       e.preventDefault();
 
       const rect = canvas.getBoundingClientRect();
@@ -208,14 +203,12 @@ const Whiteboard = () => {
       draw(x, y);
     };
 
-    // Add the event listener with 'passive: false' to allow preventDefault
     canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
 
-    // Cleanup: remove the event listener when the component unmounts
     return () => {
       canvas.removeEventListener("touchmove", handleTouchMove);
     };
-  }, [draw, scale]); // Rerun if the draw function or scale changes
+  }, [draw, scale]);
 
   useEffect(() => {
     if (contextRef.current) {
@@ -233,14 +226,17 @@ const Whiteboard = () => {
     setIsLoadingFeedback(true);
 
     try {
-      const response = await fetch("http://127.0.0.1:5001/api/analyze-work", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          image: base64Image,
-          problemContext: currentQuestion.title,
-        }),
-      });
+      const response = await fetch(
+        "https://revision-backend-p35l.onrender.com/api/analyze-work",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            image: base64Image,
+            problemContext: currentQuestion.title,
+          }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to get feedback from the server.");
