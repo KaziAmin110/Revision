@@ -8,7 +8,7 @@ const Whiteboard = () => {
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [tool, setTool] = useState<"pen" | "eraser">("pen");
-  const [color, setColor] = useState("#FFFFFF");
+  const [color, setColor] = useState("#000000");
   const [lineWidth, setLineWidth] = useState(3);
   const [scale, setScale] = useState(1);
 
@@ -110,7 +110,7 @@ const Whiteboard = () => {
   };
 
   return (
-    <div className="w-full flex-1 flex flex-col bg-gray-800 overflow-hidden border border-gray-700">
+    <div className="w-full flex-1 flex flex-col bg-white overflow-hidden border border-gray-700">
       <div className="toolbar bg-gray-900 p-2 flex items-center justify-between gap-2 border-b border-gray-700">
         <div className="flex items-center gap-2">
           <button
@@ -120,7 +120,7 @@ const Whiteboard = () => {
             }`}
             title="Pen"
           >
-            <Pen size={20} />
+            <Pen size={20} className="text-white" />
           </button>
           <button
             onClick={() => setTool("eraser")}
@@ -135,7 +135,7 @@ const Whiteboard = () => {
             type="color"
             value={color}
             onChange={(e) => setColor(e.target.value)}
-            className="w-8 h-8 bg-transparent border-none cursor-pointer"
+            className="w-8 h-8 bg-transparent border-white cursor-pointer"
             title="Color Picker"
           />
           <input
