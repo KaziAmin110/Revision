@@ -84,7 +84,7 @@ const Whiteboard = () => {
 
   const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return;
-    e.preventDefault(); 
+    e.preventDefault();
     const { x, y } = getCoordsFromEvent(e);
     draw(x, y);
   };
@@ -180,7 +180,7 @@ const Whiteboard = () => {
   };
 
   return (
-    <div className="flex w-screen h-screen bg-white">
+    <div className="flex w-screen h-screen bg-white overflow-hidden">
       <Sidebar suggestions={suggestions} />
       <div className="w-full flex-1 flex flex-col bg-white overflow-hidden">
         <ProgressBar
@@ -188,7 +188,6 @@ const Whiteboard = () => {
           total={questions.length}
         />
         <div className="toolbar bg-gray-900 p-4 flex items-center justify-between gap-2 border-b border-gray-700">
-          {/* Toolbar JSX is unchanged */}
           <div className="flex items-center gap-2">
             <button
               onClick={() => setTool("pen")}
@@ -278,7 +277,8 @@ const Whiteboard = () => {
             </button>
           </div>
         </div>
-        <div className="flex-grow w-full h-full overflow-auto bg-white">
+
+        <div className="flex-grow w-full overflow-auto bg-white min-h-0">
           <canvas
             ref={canvasRef}
             onMouseDown={handleMouseDown}
@@ -295,6 +295,7 @@ const Whiteboard = () => {
             }}
           />
         </div>
+
         <NavigationControls
           onPrev={handlePreviousQuestion}
           onNext={handleNextQuestion}
