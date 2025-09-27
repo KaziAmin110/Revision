@@ -1,17 +1,19 @@
 from flask import Flask, request, jsonify
+from dotenv import load_dotenv
 import base64
 import requests
 import google.generativeai as genai
 from google.cloud import vision
 import os
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = r"C:\Users\david\OneDrive\University of Central Florida\Year 4\Projects\Hackathons\ShellHacks 2025\genkeyhere"
+load_dotenv(dotenv_path=r"C:\Users\david\OneDrive\University of Central Florida\Year 4\Projects\Hackathons\ShellHacks 2025\backend\.env.local")
 
-testSolution = "1 + 2 = 43\n3 * 4 = 12\n12 / 2 = 6"
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.getenv("CGP_KEYFILE")
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+# testSolution = "1 + 2 = 43\n3 * 4 = 12\n12 / 2 = 6"
 
 app = Flask(__name__)
-
-genai.configure(api_key="")
 
 vision_client = vision.ImageAnnotatorClient()
 
@@ -23,9 +25,9 @@ def imageOCR(image_bytes):
         return texts[0].description
     return ""
 
-@app.route("/")
-def home():
-    return "Flask backend is running. Try /test_gemini."
+# @app.route("/")
+# def home():
+#     return "Flask backend is running. Try /test_gemini."
 
 def checkSolution(solution_text):
     prompt = (
@@ -38,15 +40,14 @@ def checkSolution(solution_text):
     response = model.generate_content(prompt)
     return response.text
 
-@app.route("/test_gemini", methods=["GET"])
-def test_gemini():
-    # Hardcoded simple arithmetic solution
-    feedbackAI = checkSolution(testSolution)
-    return jsonify({
-        "input": testSolution,
-        "feedbackAI": feedbackAI
-    })
-
+# @app.route("/test_gemini", methods=["GET"])
+# def test_gemini():
+#     # Hardcoded simple arithmetic solution
+#     feedbackAI = checkSolution(testSolution)
+#     return jsonify({
+#         "input": testSolution,
+#         "feedbackAI": feedbackAI
+#     })
 
 @app.route("/upload", methods=["POST"])
 def upload_whiteBoard():
@@ -57,15 +58,13 @@ def upload_whiteBoard():
 
     # Google Vision OCR
     extractedText = imageOCR(imageBytes)
-    #extractedText = testSolution
+    print("Extracted Text:", extractedText)
 
     # Recursive AI Check
     feedbackAI = checkSolution(extractedText)
+    print("AI Feedback:", feedbackAI)
 
     return jsonify({"extractedText": extractedText, "feedbackAI": feedbackAI})
 
 if __name__ == "__main__":
     app.run(debug=True)
-
-    #AIzaSyARoGx7idpukvbbpnPa6QqneTX4FdNLVWM
-    #gen-lang-client-0814143812-841deb3658f1.json
