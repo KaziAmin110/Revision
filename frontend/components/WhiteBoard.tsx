@@ -15,8 +15,7 @@ import { Sidebar } from "./Sidebar";
 import { Suggestion } from "./Suggestion";
 import { ProgressBar } from "./ProgressBar";
 import { NavigationControls } from "./NavigationControls";
-import { MathRenderer } from "./MathRenderer";
-import { questions } from "@/src/questionsData";
+import { questions } from "@/src/questions";
 
 type AIFeedback = {
   isCorrect: boolean;
@@ -309,11 +308,9 @@ const Whiteboard = () => {
               title="Line Width"
             />
           </div>
-          <div className="flex-grow text-white text-center font-semiobold">
-            <MathRenderer 
-              content={currentQuestion.title}
-              className="text-2xl font-bold"
-            />
+          <div className="flex-grow text-white text-center font-semibold">
+            {" "}
+            <h1 className="text-2xl">{currentQuestion.title}</h1>{" "}
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 p-2 rounded bg-gray-700 text-white text-sm">
