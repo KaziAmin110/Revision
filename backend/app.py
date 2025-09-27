@@ -1,4 +1,3 @@
-
 # -------------------------------------------------------------------------------------------------
 #   Revision - Backend OCR API Script
 #   Writen By: David Navarrete, Pranavsai Gandikota, Kazi Amin, and Jeremy Whatts
@@ -19,6 +18,8 @@ import os
 import json
 import uuid  # Used to generate unique filenames
 from supabase import create_client, Client  # Import Supabase client
+import io  # NEW: Used for handling file bytes in memory
+from pdf2image import convert_from_bytes # NEW: For converting PDF to images
 
 # -------------------------------------------------------------------------------------------------
 #   APP CONFIGURATION
@@ -65,7 +66,7 @@ try:
 
     # Retrieves Google Vision and Gemini Clients
     vision_client = vision.ImageAnnotatorClient()
-    gemini_model = genai.GenerativeModel("gemini-2.5-flash-preview-05-20")
+    gemini_model = genai.GenerativeModel("gemini-1.5-flash") # Updated model name for better performance
 
 except Exception as e: # Catches Any Exception, Prints Error, and Ends App
     print(f"FATAL: Could not initialize Google API clients: {e}")
@@ -101,14 +102,12 @@ def image_ocr(image_bytes):
 
     # Prints Initial Console Log Statements
     print("OCR function called.")
-    print("Image bytes length:", len(image_bytes))
 
     # Sets Up Image for Google Vision Reference
     image = vision.Image(content=image_bytes)
 
     # Performs and Logs Text Extraction OCR on Image for Response
     response = vision_client.text_detection(image=image)
-    print("Vision API response:", response)
 
     #Sets Reference to Extracted Text
     texts = response.text_annotations
@@ -117,17 +116,41 @@ def image_ocr(image_bytes):
     if texts:
 
         # Logs and Returns Extracted Text Description
-        print("Extracted text:", texts[0].description)
+        print("Extracted text from image.")
         return texts[0].description
     
     # Logs and Returns Empty String If NO Text Found
-    print("No text found by OCR.")
+    print("No text found by OCR in image.")
     return ""
+
+# ----- NEW FUNCTION TO PROCESS PDFs -----
+def process_pdf(pdf_bytes):
+    print("PDF processing function called.")
+    try:
+        # Convert PDF bytes to a list of PIL Image objects
+        images = convert_from_bytes(pdf_bytes)
+        full_text = ""
+        
+        # Iterate over each page (now an image)
+        for i, page_image in enumerate(images):
+            print(f"Processing page {i+1} of PDF...")
+            # Convert PIL image to bytes to pass to the OCR function
+            img_byte_arr = io.BytesIO()
+            page_image.save(img_byte_arr, format='PNG')
+            img_bytes = img_byte_arr.getvalue()
+            
+            # Run OCR on the image of the page
+            text_from_page = image_ocr(img_bytes)
+            full_text += text_from_page + "\n\n" # Add text with page breaks
+            
+        return full_text
+    except Exception as e:
+        print(f"Error processing PDF: {e}")
+        return None
 
 # Generates AI Input Solution Process Error Feedback using Gemini LLM
 def get_ai_feedback(solution_text, problem_context="a math problem"):
-
-    # Sets Up Variable Tailored Gemini Prompt
+    # (This function remains unchanged)
     prompt = f"""
         Act as an expert AI math tutor. A student is working on: "{problem_context}".
         Analyze their handwritten work provided as text. Your task is to provide a single, concise piece of feedback.
@@ -146,20 +169,12 @@ def get_ai_feedback(solution_text, problem_context="a math problem"):
             "suggestion": "<string, your feedback/suggestion for the student>"
         }}
 
-        Irrelevant answer are replied with a humorous response followed by a redirection/encoruagement to focus on math problem.
-
+        Irrelevant answers are replied with a humorous response followed by a redirection/encouragement to focus on math problems.
     """
-    # Tries to Generate Gemini JSON Response
     try:
-
-        # Sets Response to Gemini Prompt-Generated Response
         response = gemini_model.generate_content(prompt)
-
-        # Cleans and Returns Parsed JSON Response
         cleaned_response = response.text.strip().replace("```json", "").replace("```", "")
         return json.loads(cleaned_response)
-    
-    # Catches Any Exception, Prints Error, and Returns Default JSON Response
     except Exception as e:
         print(f"Error in get_ai_feedback: {e}")
         return {
@@ -171,70 +186,81 @@ def get_ai_feedback(solution_text, problem_context="a math problem"):
 #   APP ROUTE AND ENDPOINTS
 # -------------------------------------------------------------------------------------------------
 
-# Analyzes Whiteboard Image and Returns AI Feedback JSON
+# (Original endpoint for whiteboard base64 images)
 @app.route("/api/analyze-work", methods=["POST"])
 def analyze_whiteboard():
-
-    # Retreives Image Data from Request 
+    # ... (this function remains unchanged)
     data = request.get_json()
-
-    # Checks If No Data or No Image Data Provided and Returns JSON Error
     if not data or "image" not in data:
         return jsonify({"error": "No image data provided"}), 400
-
-    # Tries to Decode Base64 Image Data
     try:
-
-        # Sets Reference to Decoded Base64 Image Data
         image_bytes = base64.b64decode(data["image"])
-
-    # Catches Any Exception and Returns JSON Error    
     except Exception as e:
         return jsonify({"error": f"Invalid Base64 image data: {e}"}), 400
-
-    # Upload image to Supabase Storage before processing
     try:
-        
-        # Sets SUPABASE Bucket Name and Image File Name for Upload
         bucket_name = "WhiteBoardImages" 
         file_name = f"solution-{uuid.uuid4()}.png"
-        
-        # Uploads Image to Supabase Storage Bucket and logs Success
-        supabase.storage.from_(bucket_name).upload(file_name, image_bytes, {
-            "content-type": "image/png"
-        })
+        supabase.storage.from_(bucket_name).upload(file_name, image_bytes, {"content-type": "image/png"})
         print(f"Image uploaded to Supabase as: {file_name}")
-
-    # Catches Any Exception and Logs Error
     except Exception as e:
         print(f"Error uploading to Supabase: {e}")
-    
-    # Console Logs first 20 bytes of the Image for debugging
-    print(image_bytes[:20]) 
-
-    # Performs OCR and Logs Extracted Text (100 bytes)
     extracted_text = image_ocr(image_bytes)
-    print(f"Extracted Text: {extracted_text[:100]}") 
-
-    # Checks If OCR Extraction Failed and Returns JSON Error
     if extracted_text is None:
         return jsonify({"error": "Failed to perform OCR on the image"}), 500
-    
-    # Checks If No Text was Extracted and Returns Default JSON Suggestion
     if not extracted_text.strip():
         return jsonify({
             "isCorrect": False,
             "suggestion": "I couldn't find any text in your drawing. Please write your solution on the whiteboard."
         })
-    
-    # Retrieves Problem Context from Request Data or Sets Default
     problem_context = data.get("problemContext", "a math problem")
+    ai_feedback = get_ai_feedback(extracted_text, problem_context)
+    return jsonify(ai_feedback)
 
-    # Retrieves AI Feedback using Extracted Text and Problem Context
+# ----- NEW ENDPOINT FOR HANDLING FILE UPLOADS FROM SUPABASE -----
+@app.route("/api/analyze-file", methods=["POST"])
+def analyze_uploaded_file():
+    data = request.get_json()
+    
+    # 1. Get the filename from the frontend request
+    if not data or "fileName" not in data:
+        return jsonify({"error": "No fileName provided"}), 400
+        
+    file_name = data["fileName"]
+    bucket_name = "PDFBucket" # As defined in your frontend
+    print(f"Received request to analyze file: {file_name} from bucket: {bucket_name}")
+
+    # 2. Download the file from Supabase Storage
+    try:
+        file_bytes = supabase.storage.from_(bucket_name).download(file_name)
+        print("Successfully downloaded file from Supabase.")
+    except Exception as e:
+        print(f"Error downloading file from Supabase: {e}")
+        return jsonify({"error": f"Could not retrieve file '{file_name}' from storage."}), 500
+
+    extracted_text = ""
+    # 3. Check file type and process accordingly
+    if file_name.lower().endswith('.pdf'):
+        extracted_text = process_pdf(file_bytes)
+    elif file_name.lower().endswith(('.png', '.jpg', '.jpeg')):
+        extracted_text = image_ocr(file_bytes)
+    else:
+        return jsonify({"error": "Unsupported file type"}), 400
+    
+    # 4. Handle OCR results and get AI feedback
+    if extracted_text is None:
+        return jsonify({"error": "Failed to process the file."}), 500
+    
+    if not extracted_text.strip():
+        return jsonify({
+            "isCorrect": False,
+            "suggestion": "I couldn't find any readable text in your file. Please try uploading a clearer image or PDF."
+        })
+        
+    problem_context = data.get("problemContext", "a math problem")
     ai_feedback = get_ai_feedback(extracted_text, problem_context)
     
-    # Returns AI Feedback as JSON Response
     return jsonify(ai_feedback)
+
 
 # -------------------------------------------------------------------------------------------------
 #   FLASK/WEB APP FUNCTION

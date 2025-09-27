@@ -59,6 +59,21 @@ export default function UploadPage() {
           { name: file.name, url: publicUrlData.publicUrl || "" },
         ]);
       }
+
+      try {
+        const response = await fetch("http://localhost:5001/api/analyze-file", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ fileName: file.name }),
+        });
+
+        const feedback = await response.json();
+        console.log("Feedback from backend:", feedback);
+      } catch (backendError) {
+        console.error("Backend error:", backendError);
+      }
     }
 
     setUploading(false);
@@ -73,7 +88,9 @@ export default function UploadPage() {
   });
 
   const removeFile = async (fileName: string) => {
-    const { error } = await supabase.storage.from("uploads").remove([fileName]);
+    const { error } = await supabase.storage
+      .from("PDFBucket")
+      .remove([fileName]);
     if (error) {
       console.error("Delete error:", error);
     } else {
