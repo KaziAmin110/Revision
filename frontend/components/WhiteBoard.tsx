@@ -21,6 +21,74 @@ const Whiteboard = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const currentQuestion = questions[currentQuestionIndex];
 
+  const startDrawing = (x: number, y: number) => {
+    if (contextRef.current) {
+      contextRef.current.beginPath();
+      contextRef.current.moveTo(x, y);
+      setIsDrawing(true);
+    }
+  };
+
+  const finishDrawing = () => {
+    if (contextRef.current) {
+      contextRef.current.closePath();
+      setIsDrawing(false);
+    }
+  };
+
+  const draw = (x: number, y: number) => {
+    if (!isDrawing || !contextRef.current) return;
+    contextRef.current.globalCompositeOperation =
+      tool === "pen" ? "source-over" : "destination-out";
+    contextRef.current.lineTo(x, y);
+    contextRef.current.stroke();
+  };
+
+  const getCoordsFromEvent = (
+    e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
+  ) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+
+    const clientX =
+      "touches" in e.nativeEvent
+        ? e.nativeEvent.touches[0].clientX
+        : e.nativeEvent.clientX;
+    const clientY =
+      "touches" in e.nativeEvent
+        ? e.nativeEvent.touches[0].clientY
+        : e.nativeEvent.clientY;
+
+    const x = (clientX - rect.left) / scale;
+    const y = (clientY - rect.top) / scale;
+
+    return { x, y };
+  };
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const { x, y } = getCoordsFromEvent(e);
+    startDrawing(x, y);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return;
+    const { x, y } = getCoordsFromEvent(e);
+    draw(x, y);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    const { x, y } = getCoordsFromEvent(e);
+    startDrawing(x, y);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return;
+    e.preventDefault(); 
+    const { x, y } = getCoordsFromEvent(e);
+    draw(x, y);
+  };
+
   const handleNextQuestion = () => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
@@ -33,21 +101,6 @@ const Whiteboard = () => {
     }
   };
 
-  // --- Effect to update suggestions and clear canvas on question change ---
-  useEffect(() => {
-    // Clear previous suggestions immediately for a snappier feel
-    setSuggestions([]);
-
-    // Simulate fetching new suggestions for the current question
-    const timer = setTimeout(() => {
-      setSuggestions(currentQuestion.suggestions);
-    }, 500); // Simulate a short network delay
-
-    clearCanvas();
-
-    return () => clearTimeout(timer);
-  }, [currentQuestionIndex, currentQuestion.suggestions]);
-
   const clearCanvas = () => {
     const canvas = canvasRef.current;
     const context = contextRef.current;
@@ -59,11 +112,18 @@ const Whiteboard = () => {
     }
   };
 
-  // Set canvas dimensions on mount and resize
+  useEffect(() => {
+    setSuggestions([]);
+    const timer = setTimeout(() => {
+      setSuggestions(currentQuestion.suggestions);
+    }, 500);
+    clearCanvas();
+    return () => clearTimeout(timer);
+  }, [currentQuestionIndex, currentQuestion.suggestions]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const setCanvasDimensions = () => {
       const container = canvas.parentElement;
       if (container) {
@@ -73,7 +133,6 @@ const Whiteboard = () => {
         canvas.height = height * dpr;
         canvas.style.width = `${width}px`;
         canvas.style.height = `${height}px`;
-
         const context = canvas.getContext("2d");
         if (context) {
           context.scale(dpr, dpr);
@@ -84,13 +143,11 @@ const Whiteboard = () => {
         }
       }
     };
-
     setCanvasDimensions();
     window.addEventListener("resize", setCanvasDimensions);
     return () => window.removeEventListener("resize", setCanvasDimensions);
   }, [color, lineWidth]);
 
-  // Update context properties when they change
   useEffect(() => {
     if (contextRef.current) {
       contextRef.current.strokeStyle = color;
@@ -98,42 +155,18 @@ const Whiteboard = () => {
     }
   }, [color, lineWidth]);
 
-  const startDrawing = ({
-    nativeEvent,
-  }: React.MouseEvent<HTMLCanvasElement>) => {
-    const { offsetX, offsetY } = nativeEvent;
-    if (contextRef.current) {
-      contextRef.current.beginPath();
-      contextRef.current.moveTo(offsetX / scale, offsetY / scale);
-      setIsDrawing(true);
-    }
-  };
-
-  const finishDrawing = () => {
-    if (contextRef.current) {
-      contextRef.current.closePath();
-      setIsDrawing(false);
-    }
-  };
-
-  const draw = ({ nativeEvent }: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return;
-    const { offsetX, offsetY } = nativeEvent;
-    if (contextRef.current) {
-      contextRef.current.globalCompositeOperation =
-        tool === "pen" ? "source-over" : "destination-out";
-      contextRef.current.lineTo(offsetX / scale, offsetY / scale);
-      contextRef.current.stroke();
-    }
-  };
-
   const downloadCanvas = () => {
     const canvas = canvasRef.current;
+
     if (canvas) {
       const image = canvas.toDataURL("image/png");
+
       const link = document.createElement("a");
+
       link.href = image;
+
       link.download = "whiteboard-solution.png";
+
       link.click();
     }
   };
@@ -141,6 +174,7 @@ const Whiteboard = () => {
   const handleZoom = (direction: "in" | "out") => {
     setScale((prevScale) => {
       const newScale = direction === "in" ? prevScale * 1.1 : prevScale / 1.1;
+
       return Math.max(0.5, Math.min(newScale, 3));
     });
   };
@@ -153,11 +187,9 @@ const Whiteboard = () => {
           current={currentQuestionIndex + 1}
           total={questions.length}
         />
-
         <div className="toolbar bg-gray-900 p-4 flex items-center justify-between gap-2 border-b border-gray-700">
-          {/* Left tools */}
+          {/* Toolbar JSX is unchanged */}
           <div className="flex items-center gap-2">
-            {/* ... pen, eraser, color, range inputs are the same ... */}
             <button
               onClick={() => setTool("pen")}
               className={`p-2 rounded ${
@@ -165,7 +197,8 @@ const Whiteboard = () => {
               }`}
               title="Pen"
             >
-              <Pen size={20} className="text-white hover:cursor-pointer" />
+              {" "}
+              <Pen size={20} className="text-white hover:cursor-pointer" />{" "}
             </button>
             <button
               onClick={() => setTool("eraser")}
@@ -174,7 +207,11 @@ const Whiteboard = () => {
               }`}
               title="Eraser"
             >
-              <Eraser size={20} className="text-white hover:cursor-pointer" />
+              {" "}
+              <Eraser
+                size={20}
+                className="text-white hover:cursor-pointer"
+              />{" "}
             </button>
             <input
               type="color"
@@ -193,54 +230,64 @@ const Whiteboard = () => {
               title="Line Width"
             />
           </div>
-
-          {/* DYNAMIC Question Title */}
           <div className="flex-grow text-white text-center font-semiobold">
-            <h1 className="text-2xl font-bold">{currentQuestion.title}</h1>
+            {" "}
+            <h1 className="text-2xl font-bold">{currentQuestion.title}</h1>{" "}
           </div>
-
-          {/* Right tools */}
           <div className="flex items-center gap-2">
-            {/* ... zoom, download, trash buttons are the same ... */}
             <button
               onClick={() => handleZoom("in")}
               className="p-2 hover:bg-gray-700 rounded hover:cursor-pointer"
               title="Zoom In"
             >
-              <ZoomIn size={20} className="text-white hover:cursor-pointer" />
+              {" "}
+              <ZoomIn
+                size={20}
+                className="text-white hover:cursor-pointer"
+              />{" "}
             </button>
             <button
               onClick={() => handleZoom("out")}
               className="p-2 hover:bg-gray-700 rounded hover:cursor-pointer"
               title="Zoom Out"
             >
-              <ZoomOut size={20} className="text-white hover:cursor-pointer" />
+              {" "}
+              <ZoomOut
+                size={20}
+                className="text-white hover:cursor-pointer"
+              />{" "}
             </button>
             <button
               onClick={downloadCanvas}
               className="p-2 hover:bg-gray-700 rounded hover:cursor-pointer"
               title="Download"
             >
-              <Download size={20} className="text-white hover:cursor-pointer" />
+              {" "}
+              <Download
+                size={20}
+                className="text-white hover:cursor-pointer"
+              />{" "}
             </button>
             <button
               onClick={clearCanvas}
               className="p-2 hover:bg-red-500/20 text-red-400 rounded hover:cursor-pointer"
               title="Clear Canvas"
             >
-              <Trash2 size={20} className="hover:cursor-pointer" />
+              {" "}
+              <Trash2 size={20} className="hover:cursor-pointer" />{" "}
             </button>
           </div>
         </div>
-
-        {/* Canvas Area */}
         <div className="flex-grow w-full h-full overflow-auto bg-white">
           <canvas
             ref={canvasRef}
-            onMouseDown={startDrawing}
+            onMouseDown={handleMouseDown}
             onMouseUp={finishDrawing}
-            onMouseMove={draw}
+            onMouseMove={handleMouseMove}
             onMouseLeave={finishDrawing}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={finishDrawing}
+            onTouchMove={handleTouchMove}
             className="cursor-crosshair bg-white"
             style={{
               transform: `scale(${scale})`,
@@ -248,7 +295,6 @@ const Whiteboard = () => {
             }}
           />
         </div>
-
         <NavigationControls
           onPrev={handlePreviousQuestion}
           onNext={handleNextQuestion}
