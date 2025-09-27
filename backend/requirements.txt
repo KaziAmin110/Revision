@@ -5,3 +5,4 @@ google-generativeai
 google-cloud-vision
 flask-cors
 supabase
+gunicorn
