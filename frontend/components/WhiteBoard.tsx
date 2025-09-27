@@ -110,7 +110,7 @@ const Whiteboard = () => {
   };
 
   return (
-    <div className="w-full h-full flex flex-col bg-gray-800 rounded-xl overflow-hidden border border-gray-700">
+    <div className="w-full flex-1 flex flex-col bg-gray-800 overflow-hidden border border-gray-700">
       <div className="toolbar bg-gray-900 p-2 flex items-center justify-between gap-2 border-b border-gray-700">
         <div className="flex items-center gap-2">
           <button
@@ -129,7 +129,7 @@ const Whiteboard = () => {
             }`}
             title="Eraser"
           >
-            <Eraser size={20} />
+            <Eraser size={20} className="text-white" />
           </button>
           <input
             type="color"
@@ -154,21 +154,21 @@ const Whiteboard = () => {
             className="p-2 hover:bg-gray-700 rounded"
             title="Zoom In"
           >
-            <ZoomIn size={20} />
+            <ZoomIn size={20} className="text-white" />
           </button>
           <button
             onClick={() => handleZoom("out")}
             className="p-2 hover:bg-gray-700 rounded"
             title="Zoom Out"
           >
-            <ZoomOut size={20} />
+            <ZoomOut size={20} className="text-white" />
           </button>
           <button
             onClick={downloadCanvas}
             className="p-2 hover:bg-gray-700 rounded"
             title="Download"
           >
-            <Download size={20} />
+            <Download size={20} className="text-white" />
           </button>
           <button
             onClick={clearCanvas}
