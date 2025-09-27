@@ -1,6 +1,7 @@
 // src/components/Suggestion.tsx
 import React from "react";
 import { Lightbulb, Info, CheckCircle } from "lucide-react";
+import { MathRenderer } from "./MathRenderer";
 
 // Define the types for suggestion data
 export type SuggestionType = "logic" | "info" | "feedback";
@@ -40,7 +41,10 @@ export const SuggestionCard: React.FC<{ suggestion: Suggestion }> = ({
         {config.icon}
         <h3 className="font-semibold text-gray-900">{suggestion.title}</h3>
       </div>
-      <p className="text-sm text-gray-700">{suggestion.content}</p>
+      <MathRenderer 
+        content={suggestion.content}
+        className="text-sm text-gray-700"
+      />
     </div>
   );
 };
