@@ -1,0 +1,37 @@
+<!-- Save as index.html in your frontend folder -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Whiteboard OCR + AI Checker</title>
+</head>
+<body>
+  <h1>Upload Whiteboard Image</h1>
+  <form id="uploadForm">
+    <input type="file" id="imageInput" name="image" accept="image/*" required>
+    <button type="submit">Upload & Check</button>
+  </form>
+  <h2>Extracted Text:</h2>
+  <pre id="extractedText"></pre>
+  <h2>AI Feedback:</h2>
+  <pre id="aiFeedback"></pre>
+
+  <script>
+    document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const formData = new FormData();
+      const fileInput = document.getElementById('imageInput');
+      formData.append('image', fileInput.files[0]);
+
+      const response = await fetch('http://127.0.0.1:5000/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+      document.getElementById('extractedText').textContent = data.extractedText || 'No text found.';
+      document.getElementById('aiFeedback').textContent = data.feedbackAI || 'No feedback.';
+    });
+  </script>
+</body>
+</html>
