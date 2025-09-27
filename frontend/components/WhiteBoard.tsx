@@ -221,7 +221,7 @@ const Whiteboard = () => {
   const getAIFeedback = async () => {
     if (!canvasRef.current) return;
 
-    const imageDataUrl = canvasRef.current.toDataURL("image/png");
+    const imageDataUrl = canvasRef.current.toDataURL("image/jpeg", 0.8);
     const base64Image = imageDataUrl.split(",")[1];
 
     setIsLoadingFeedback(true);
