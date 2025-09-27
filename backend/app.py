@@ -38,7 +38,7 @@ except Exception as e:
     print(f"FATAL: Could not initialize Google API clients: {e}")
     exit()
 
-# NEW: Supabase Client Initialization
+# Supabase Client Initialization
 try:
     supabase_url = os.environ.get("SUPABASE_URL")
     supabase_key = os.environ.get("SUPABASE_KEY")
@@ -52,20 +52,35 @@ except Exception as e:
 
 
 # --- Core Functions ---
-# (image_ocr and get_ai_feedback functions remain the same)
 
 def image_ocr(image_bytes):
     """Performs OCR on the given image bytes using Google Vision API."""
     try:
+        print("Attempting OCR with Google Vision API...")
         image = vision.Image(content=image_bytes)
         response = vision_client.text_detection(image=image)
+        
+        # --- NEW DETAILED LOGGING ---
+        # This will print the full raw response from the Vision API to your terminal.
+        print("\n--- Google Vision API Response ---")
+        print(response)
+        print("---------------------------------\n")
+        # --- END NEW LOGGING ---
+
         if response.error.message:
+            print(f"Vision API returned an error message: {response.error.message}")
             raise Exception(f"Vision API Error: {response.error.message}")
         
         texts = response.text_annotations
-        return texts[0].description if texts else ""
+        if texts:
+            print(f"Successfully extracted text: '{texts[0].description[:70]}...'")
+            return texts[0].description
+        else:
+            print("Vision API returned a valid response but found no text annotations.")
+            return ""
+
     except Exception as e:
-        print(f"Error in image_ocr: {e}")
+        print(f"An exception occurred in the image_ocr function: {e}")
         return None
 
 def get_ai_feedback(solution_text, problem_context="a math problem"):
@@ -113,14 +128,11 @@ def analyze_whiteboard():
     except Exception as e:
         return jsonify({"error": f"Invalid Base64 image data: {e}"}), 400
 
-    # MODIFIED: Upload image to Supabase Storage before processing
+    # Upload image to Supabase Storage before processing
     try:
-        # NOTE: You must create a bucket named 'homework-images' in your Supabase dashboard.
-        bucket_name = "homework-images"
-        # Generate a unique file name to avoid overwriting files
+        bucket_name = "WhiteBoardImages" # As per your last version
         file_name = f"solution-{uuid.uuid4()}.png"
         
-        # Upload the file bytes
         supabase.storage.from_(bucket_name).upload(file_name, image_bytes, {
             "content-type": "image/png"
         })
@@ -128,10 +140,11 @@ def analyze_whiteboard():
 
     except Exception as e:
         print(f"Error uploading to Supabase: {e}")
-        # Log the error but continue processing so the user still gets feedback
     
     # 1. Google Vision OCR
     extracted_text = image_ocr(image_bytes)
+    print(f"Extracted Text: {extracted_text[:100]}") 
+
     if extracted_text is None:
         return jsonify({"error": "Failed to perform OCR on the image"}), 500
     
@@ -140,6 +153,7 @@ def analyze_whiteboard():
             "isCorrect": False,
             "suggestion": "I couldn't find any text in your drawing. Please write your solution on the whiteboard."
         })
+    
 
     # 2. Get AI Feedback from Gemini
     problem_context = data.get("problemContext", "a math problem")
