@@ -8,8 +8,8 @@ import {
   ZoomIn,
   ZoomOut,
   Download,
-  Bot,
   CircleDot,
+  LoaderCircle,
 } from "lucide-react";
 import { Suggestion } from "./Suggestion";
 import { ProgressBar } from "./ProgressBar";
@@ -330,7 +330,7 @@ const Whiteboard = () => {
             <div className="flex items-center gap-2 p-2 rounded bg-gray-700 text-white text-sm">
               {isLoadingFeedback ? (
                 <>
-                  <Bot size={16} className="animate-spin" />
+                  <LoaderCircle size={16} className="animate-spin" />
                   <span>Analyzing...</span>
                 </>
               ) : (
@@ -402,7 +402,6 @@ const Whiteboard = () => {
                     feedback.isCorrect ? "bg-green-600" : "bg-yellow-600"
                   }`}
                 >
-                  <p className="font-bold">ProRev Assistant:</p>
                   <MathRenderer content={feedback.suggestion} />
                 </div>
               )}
