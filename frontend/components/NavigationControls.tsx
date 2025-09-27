@@ -1,5 +1,3 @@
-// src/components/NavigationControls.tsx
-
 import React from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
@@ -9,7 +7,6 @@ interface NavigationControlsProps {
   currentIndex: number;
   totalQuestions: number;
 }
-
 export const NavigationControls: React.FC<NavigationControlsProps> = ({
   onPrev,
   onNext,

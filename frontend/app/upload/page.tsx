@@ -30,17 +30,17 @@ export default function UploadPage() {
   const startCamera = async () => {
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: 'user', // Use front camera by default for laptops
+        video: {
+          facingMode: "user", // Use front camera by default for laptops
           width: { ideal: 1280 },
-          height: { ideal: 720 }
+          height: { ideal: 720 },
         },
         audio: false,
       });
       setStream(mediaStream);
       setIsCameraOpen(true);
     } catch (error) {
-      console.error('Error accessing camera:', error);
+      console.error("Error accessing camera:", error);
       // Fallback to file input for devices without camera support
       const input = document.createElement("input");
       input.type = "file";
@@ -57,37 +57,45 @@ export default function UploadPage() {
     }
   };
 
-  const stopCamera = () => {
+  const stopCamera = useCallback(() => {
     if (stream) {
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach((track) => track.stop());
       setStream(null);
     }
     setIsCameraOpen(false);
-  };
+  }, [stream]);
 
-  const capturePhoto = () => {
+  const capturePhoto = useCallback(() => {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      const context = canvas.getContext('2d');
-      
+      const context = canvas.getContext("2d");
+
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      
+
       if (context) {
         context.drawImage(video, 0, 0);
-        canvas.toBlob((blob) => {
-          if (blob) {
-            const file = new File([blob], `camera-capture-${Date.now()}.jpg`, {
-              type: 'image/jpeg',
-            });
-            setFiles((prevFiles) => [...prevFiles, file]);
-            stopCamera();
-          }
-        }, 'image/jpeg', 0.9);
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              const file = new File(
+                [blob],
+                `camera-capture-${Date.now()}.jpg`,
+                {
+                  type: "image/jpeg",
+                }
+              );
+              setFiles((prevFiles) => [...prevFiles, file]);
+              stopCamera();
+            }
+          },
+          "image/jpeg",
+          0.9
+        );
       }
     }
-  };
+  }, [videoRef, canvasRef, setFiles, stopCamera]);
 
   const handleTakePicture = () => {
     startCamera();
@@ -96,24 +104,24 @@ export default function UploadPage() {
   // Handle spacebar for photo capture
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
-      if (event.code === 'Space' && isCameraOpen) {
+      if (event.code === "Space" && isCameraOpen) {
         event.preventDefault();
         capturePhoto();
       }
-      if (event.code === 'Escape' && isCameraOpen) {
+      if (event.code === "Escape" && isCameraOpen) {
         event.preventDefault();
         stopCamera();
       }
     };
 
     if (isCameraOpen) {
-      document.addEventListener('keydown', handleKeyPress);
+      document.addEventListener("keydown", handleKeyPress);
     }
 
     return () => {
-      document.removeEventListener('keydown', handleKeyPress);
+      document.removeEventListener("keydown", handleKeyPress);
     };
-  }, [isCameraOpen]);
+  }, [isCameraOpen, capturePhoto, stopCamera]);
 
   // Handle video stream setup
   useEffect(() => {
@@ -182,7 +190,7 @@ export default function UploadPage() {
                 <Camera className="w-16 h-16 text-gray-500 mb-4" />
                 <p className="text-lg">Take a picture</p>
                 <p className="text-sm text-gray-500 mt-2">
-                  Use your device's camera
+                  Use your device&apos;s camera
                 </p>
               </div>
             </div>
@@ -229,7 +237,9 @@ export default function UploadPage() {
           <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
             <div className="bg-gray-800 rounded-xl p-6 max-w-2xl w-full mx-4">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-semibold text-white">Take a Picture</h3>
+                <h3 className="text-xl font-semibold text-white">
+                  Take a Picture
+                </h3>
                 <button
                   onClick={stopCamera}
                   className="text-gray-400 hover:text-white transition-colors"
@@ -237,7 +247,7 @@ export default function UploadPage() {
                   <X className="w-6 h-6" />
                 </button>
               </div>
-              
+
               <div className="relative">
                 <video
                   ref={videoRef}
@@ -245,12 +255,9 @@ export default function UploadPage() {
                   playsInline
                   className="w-full h-64 sm:h-80 bg-gray-900 rounded-lg object-cover"
                 />
-                <canvas
-                  ref={canvasRef}
-                  className="hidden"
-                />
+                <canvas ref={canvasRef} className="hidden" />
               </div>
-              
+
               <div className="flex justify-center gap-4 mt-6">
                 <button
                   onClick={capturePhoto}
@@ -266,9 +273,17 @@ export default function UploadPage() {
                   Cancel
                 </button>
               </div>
-              
+
               <p className="text-sm text-gray-400 text-center mt-4">
-                Press <kbd className="bg-gray-700 px-2 py-1 rounded text-xs">Space</kbd> to capture or <kbd className="bg-gray-700 px-2 py-1 rounded text-xs">Escape</kbd> to cancel
+                Press{" "}
+                <kbd className="bg-gray-700 px-2 py-1 rounded text-xs">
+                  Space
+                </kbd>{" "}
+                to capture or{" "}
+                <kbd className="bg-gray-700 px-2 py-1 rounded text-xs">
+                  Escape
+                </kbd>{" "}
+                to cancel
               </p>
             </div>
           </div>
