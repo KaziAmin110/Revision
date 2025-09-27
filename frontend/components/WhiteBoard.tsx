@@ -111,7 +111,7 @@ const Whiteboard = () => {
 
   return (
     <div className="w-full flex-1 flex flex-col bg-white overflow-hidden border border-gray-700">
-      <div className="toolbar bg-gray-900 p-2 flex items-center justify-between gap-2 border-b border-gray-700">
+      <div className="toolbar bg-gray-900 p-4 flex items-center justify-between gap-2 border-b border-gray-700">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setTool("pen")}
@@ -147,6 +147,9 @@ const Whiteboard = () => {
             className="cursor-pointer"
             title="Line Width"
           />
+        </div>
+        <div className="flex-grow text-white text-center font-semiobold">
+          <h1 className="text-2xl font-bold">Example Question 1</h1>
         </div>
         <div className="flex items-center gap-2">
           <button
