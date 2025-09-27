@@ -259,10 +259,10 @@ const Whiteboard = () => {
   const downloadCanvas = () => {
     const canvas = canvasRef.current;
     if (canvas) {
-      const image = canvas.toDataURL("image/png");
+      const image = canvas.toDataURL("image/jpeg", 0.8);
       const link = document.createElement("a");
       link.href = image;
-      link.download = "whiteboard-solution.png";
+      link.download = "whiteboard-solution.jpeg";
       link.click();
     }
   };
