@@ -3,16 +3,65 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { UploadCloud, File as FileIcon, X, Camera } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
+
+interface UploadedFile {
+  name: string;
+  url: string;
+}
 
 export default function UploadPage() {
-  const [files, setFiles] = useState<File[]>([]);
+  const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [uploading, setUploading] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    setFiles((prevFiles) => [...prevFiles, ...acceptedFiles]);
+  // Load files from Supabase storage
+  const fetchFiles = async () => {
+    const { data, error } = await supabase.storage.from("PDFBucket").list("");
+    if (error) {
+      console.error("Error fetching files:", error);
+      return;
+    }
+
+    const fileUrls: UploadedFile[] = data.map((file) => {
+      const { data: publicUrlData } = supabase.storage
+        .from("PDFBucket")
+        .getPublicUrl(file.name);
+      return { name: file.name, url: publicUrlData.publicUrl || "" };
+    });
+    setFiles(fileUrls);
+  };
+
+  useEffect(() => {
+    fetchFiles();
+  }, []);
+
+  // Dropzone handler handleupload function
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    setUploading(true);
+
+    for (const file of acceptedFiles) {
+      const { data, error } = await supabase.storage
+        .from("PDFBucket")
+        .upload(file.name, file, { cacheControl: "3600", upsert: true });
+
+      if (error) {
+        console.error("Upload error:", error);
+      } else if (data) {
+        const { data: publicUrlData } = supabase.storage
+          .from("PDFBucket")
+          .getPublicUrl(file.name);
+        setFiles((prev) => [
+          ...prev,
+          { name: file.name, url: publicUrlData.publicUrl || "" },
+        ]);
+      }
+    }
+
+    setUploading(false);
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -23,10 +72,16 @@ export default function UploadPage() {
     },
   });
 
-  const removeFile = (fileToRemove: File) => {
-    setFiles((prevFiles) => prevFiles.filter((file) => file !== fileToRemove));
+  const removeFile = async (fileName: string) => {
+    const { error } = await supabase.storage.from("uploads").remove([fileName]);
+    if (error) {
+      console.error("Delete error:", error);
+    } else {
+      setFiles((prev) => prev.filter((f) => f.name !== fileName));
+    }
   };
 
+  // Camera handlers
   const startCamera = async () => {
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -59,18 +114,18 @@ export default function UploadPage() {
 
       if (context) {
         context.drawImage(video, 0, 0);
-        canvas.toBlob((blob) => {
+        canvas.toBlob(async (blob) => {
           if (blob) {
             const file = new File([blob], `capture-${Date.now()}.jpg`, {
               type: "image/jpeg",
             });
-            setFiles((prevFiles) => [...prevFiles, file]);
+            await onDrop([file]); // Upload to Supabase
             stopCamera();
           }
         }, "image/jpeg");
       }
     }
-  }, [stopCamera]);
+  }, [onDrop, stopCamera]);
 
   useEffect(() => {
     if (stream && videoRef.current) {
@@ -78,30 +133,6 @@ export default function UploadPage() {
       videoRef.current.play().catch(console.error);
     }
   }, [stream]);
-
-  const handleUpload = async () => {
-    if (files.length === 0) {
-      alert("Please select files to upload.");
-      return;
-    }
-
-    for (const file of files) {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      try {
-        const res = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-
-        const data = await res.json();
-        console.log("Cloud response:", data);
-      } catch (err) {
-        console.error("Upload failed:", err);
-      }
-    }
-  };
 
   return (
     <div className="bg-gray-900 min-h-screen text-white flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
@@ -140,38 +171,37 @@ export default function UploadPage() {
             </div>
           </div>
 
+          {uploading && <p className="text-blue-500 mt-4">Uploading...</p>}
+
           {files.length > 0 && (
             <div className="mt-8">
-              <h2 className="text-xl font-semibold mb-4">Selected Files</h2>
+              <h2 className="text-xl font-semibold mb-4">Uploaded Files</h2>
               <ul className="space-y-3">
-                {files.map((file, idx) => (
+                {files.map((file) => (
                   <li
-                    key={idx}
+                    key={file.name}
                     className="bg-gray-800 p-3 rounded-lg flex items-center justify-between"
                   >
                     <div className="flex items-center gap-3">
                       <FileIcon className="w-6 h-6 text-cyan-400" />
-                      <span className="truncate max-w-xs sm:max-w-md">
+                      <a
+                        href={file.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="truncate max-w-xs sm:max-w-md text-blue-400 hover:underline"
+                      >
                         {file.name}
-                      </span>
+                      </a>
                     </div>
                     <button
-                      onClick={() => removeFile(file)}
-                      className="text-gray-400 hover:text-red-500"
+                      onClick={() => removeFile(file.name)}
+                      className="text-red-500 hover:underline"
                     >
                       <X className="w-5 h-5" />
                     </button>
                   </li>
                 ))}
               </ul>
-              <div className="mt-8 text-center">
-                <button
-                  onClick={handleUpload}
-                  className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 px-8 rounded-lg"
-                >
-                  Analyze Homework
-                </button>
-              </div>
             </div>
           )}
         </main>
