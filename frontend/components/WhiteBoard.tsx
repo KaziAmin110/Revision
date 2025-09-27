@@ -16,7 +16,7 @@ import { Suggestion } from "./Suggestion";
 import { ProgressBar } from "./ProgressBar";
 import { NavigationControls } from "./NavigationControls";
 import { MathRenderer } from "./MathRenderer";
-import { questions } from "@/src/questionsData";
+import { questions } from "@/src/questions";
 
 type AIFeedback = {
   isCorrect: boolean;
@@ -219,7 +219,7 @@ const Whiteboard = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           image: base64Image,
-          problemContext: currentQuestion.title,
+          problemContext: currentQuestion.title, // Send current question as context
         }),
       });
 
