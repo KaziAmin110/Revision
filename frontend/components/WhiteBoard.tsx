@@ -37,6 +37,7 @@ const Whiteboard = () => {
 
   const [feedback, setFeedback] = useState<AIFeedback | null>(null);
   const [isLoadingFeedback, setIsLoadingFeedback] = useState(false);
+
   const feedbackTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const fillWhiteBackground = (context: CanvasRenderingContext2D) => {
@@ -50,6 +51,10 @@ const Whiteboard = () => {
 
   const startDrawing = (x: number, y: number) => {
     if (contextRef.current) {
+      // --- MODIFIED: Clear old feedback when the user starts drawing again.
+      // This "re-arms" the polling mechanism.
+      setFeedback(null);
+
       contextRef.current.beginPath();
       contextRef.current.moveTo(x, y);
       setIsDrawing(true);
@@ -61,6 +66,12 @@ const Whiteboard = () => {
       contextRef.current.closePath();
       setIsDrawing(false);
 
+      // --- MODIFIED: If feedback is already being shown, do not start a new timer.
+      // This stops polling until the user draws again.
+      if (feedback) {
+        return;
+      }
+
       if (feedbackTimerRef.current) {
         clearTimeout(feedbackTimerRef.current);
       }
@@ -68,7 +79,7 @@ const Whiteboard = () => {
         if (!isLoadingFeedback) {
           getAIFeedback();
         }
-      }, 2500);
+      }, 1500);
     }
   };
 
@@ -199,7 +210,7 @@ const Whiteboard = () => {
     const base64Image = imageDataUrl.split(",")[1];
 
     setIsLoadingFeedback(true);
-    setFeedback(null);
+    // We no longer clear feedback here, it's cleared when the user starts drawing.
 
     try {
       const response = await fetch("http://127.0.0.1:5001/api/analyze-work", {
@@ -302,7 +313,6 @@ const Whiteboard = () => {
             <h1 className="text-2xl">{currentQuestion.title}</h1>{" "}
           </div>
           <div className="flex items-center gap-2">
-            {/* --- MODIFIED: Replaced button with a status indicator --- */}
             <div className="flex items-center gap-2 p-2 rounded bg-gray-700 text-white text-sm">
               {isLoadingFeedback ? (
                 <>
