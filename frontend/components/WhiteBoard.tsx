@@ -4,50 +4,60 @@ import React, { useRef, useEffect, useState } from "react";
 import { Pen, Eraser, Trash2, ZoomIn, ZoomOut, Download } from "lucide-react";
 import { Sidebar } from "./Sidebar";
 import { Suggestion } from "./Suggestion";
-
-// --- Sample Data (to simulate a backend fetch) ---
-const sampleSuggestions: Suggestion[] = [
-  {
-    type: "info",
-    title: "Initial State",
-    content:
-      "The problem describes a system at rest. Consider the initial forces acting on the object.",
-  },
-  {
-    type: "logic",
-    title: "Key Principle",
-    content:
-      "Remember to apply Newton's Second Law (F=ma) to relate forces to acceleration.",
-  },
-  {
-    type: "feedback",
-    title: "Check Your Work",
-    content:
-      "Your free-body diagram looks correct! Now, sum the forces in the x and y directions.",
-  },
-];
-// --- End Sample Data ---
+import { ProgressBar } from "./ProgressBar";
+import { NavigationControls } from "./NavigationControls";
+import { questions } from "@/src/questions";
 
 const Whiteboard = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [tool, setTool] = useState<"pen" | "eraser">("pen");
-  const [color, setColor] = useState("#000000"); // Changed to white for dark background
+  const [color, setColor] = useState("#000000");
   const [lineWidth, setLineWidth] = useState(3);
   const [scale, setScale] = useState(1);
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
 
-  // Simulate fetching suggestions from a backend on component mount
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const currentQuestion = questions[currentQuestionIndex];
+
+  const handleNextQuestion = () => {
+    if (currentQuestionIndex < questions.length - 1) {
+      setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
+    }
+  };
+
+  const handlePreviousQuestion = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex((prevIndex) => prevIndex - 1);
+    }
+  };
+
+  // --- Effect to update suggestions and clear canvas on question change ---
   useEffect(() => {
-    // In a real app, you would fetch this data from an API
-    // fetch('/api/suggestions/question-1')
-    //   .then(res => res.json())
-    //   .then(data => setSuggestions(data));
-    setTimeout(() => {
-      setSuggestions(sampleSuggestions);
-    }, 1000); // Simulate network delay
-  }, []);
+    // Clear previous suggestions immediately for a snappier feel
+    setSuggestions([]);
+
+    // Simulate fetching new suggestions for the current question
+    const timer = setTimeout(() => {
+      setSuggestions(currentQuestion.suggestions);
+    }, 500); // Simulate a short network delay
+
+    clearCanvas();
+
+    return () => clearTimeout(timer);
+  }, [currentQuestionIndex, currentQuestion.suggestions]);
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    const context = contextRef.current;
+    if (canvas && context) {
+      context.save();
+      context.setTransform(1, 0, 0, 1, 0, 0);
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.restore();
+    }
+  };
 
   // Set canvas dimensions on mount and resize
   useEffect(() => {
@@ -94,7 +104,7 @@ const Whiteboard = () => {
     const { offsetX, offsetY } = nativeEvent;
     if (contextRef.current) {
       contextRef.current.beginPath();
-      contextRef.current.moveTo(offsetX / scale, offsetY / scale); // Adjust for scale
+      contextRef.current.moveTo(offsetX / scale, offsetY / scale);
       setIsDrawing(true);
     }
   };
@@ -110,25 +120,10 @@ const Whiteboard = () => {
     if (!isDrawing) return;
     const { offsetX, offsetY } = nativeEvent;
     if (contextRef.current) {
-      if (tool === "pen") {
-        contextRef.current.globalCompositeOperation = "source-over";
-      } else {
-        contextRef.current.globalCompositeOperation = "destination-out";
-      }
-      contextRef.current.lineTo(offsetX / scale, offsetY / scale); // Adjust for scale
+      contextRef.current.globalCompositeOperation =
+        tool === "pen" ? "source-over" : "destination-out";
+      contextRef.current.lineTo(offsetX / scale, offsetY / scale);
       contextRef.current.stroke();
-    }
-  };
-
-  const clearCanvas = () => {
-    const canvas = canvasRef.current;
-    const context = contextRef.current;
-    if (canvas && context) {
-      // Need to save/restore transform state when clearing
-      context.save();
-      context.setTransform(1, 0, 0, 1, 0, 0);
-      context.clearRect(0, 0, canvas.width, canvas.height);
-      context.restore();
     }
   };
 
@@ -154,8 +149,15 @@ const Whiteboard = () => {
     <div className="flex w-screen h-screen bg-white">
       <Sidebar suggestions={suggestions} />
       <div className="w-full flex-1 flex flex-col bg-white overflow-hidden">
+        <ProgressBar
+          current={currentQuestionIndex + 1}
+          total={questions.length}
+        />
+
         <div className="toolbar bg-gray-900 p-4 flex items-center justify-between gap-2 border-b border-gray-700">
+          {/* Left tools */}
           <div className="flex items-center gap-2">
+            {/* ... pen, eraser, color, range inputs are the same ... */}
             <button
               onClick={() => setTool("pen")}
               className={`p-2 rounded ${
@@ -191,10 +193,15 @@ const Whiteboard = () => {
               title="Line Width"
             />
           </div>
+
+          {/* DYNAMIC Question Title */}
           <div className="flex-grow text-white text-center font-semiobold">
-            <h1 className="text-2xl font-bold">Example Question 1</h1>
+            <h1 className="text-2xl font-bold">{currentQuestion.title}</h1>
           </div>
+
+          {/* Right tools */}
           <div className="flex items-center gap-2">
+            {/* ... zoom, download, trash buttons are the same ... */}
             <button
               onClick={() => handleZoom("in")}
               className="p-2 hover:bg-gray-700 rounded hover:cursor-pointer"
@@ -241,6 +248,13 @@ const Whiteboard = () => {
             }}
           />
         </div>
+
+        <NavigationControls
+          onPrev={handlePreviousQuestion}
+          onNext={handleNextQuestion}
+          currentIndex={currentQuestionIndex}
+          totalQuestions={questions.length}
+        />
       </div>
     </div>
   );
