@@ -275,7 +275,7 @@ const Whiteboard = () => {
   };
 
   return (
-    <div className="flex w-screen h-screen bg-white overflow-hidden">
+    <div className="flex w-screen h-dvh bg-white overflow-hidden">
       <div className="w-full flex-1 flex flex-col bg-white overflow-hidden">
         <ProgressBar
           current={currentQuestionIndex + 1}
