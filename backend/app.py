@@ -54,34 +54,17 @@ except Exception as e:
 # --- Core Functions ---
 
 def image_ocr(image_bytes):
-    """Performs OCR on the given image bytes using Google Vision API."""
-    try:
-        print("Attempting OCR with Google Vision API...")
-        image = vision.Image(content=image_bytes)
-        response = vision_client.text_detection(image=image)
-        
-        # --- NEW DETAILED LOGGING ---
-        # This will print the full raw response from the Vision API to your terminal.
-        print("\n--- Google Vision API Response ---")
-        print(response)
-        print("---------------------------------\n")
-        # --- END NEW LOGGING ---
-
-        if response.error.message:
-            print(f"Vision API returned an error message: {response.error.message}")
-            raise Exception(f"Vision API Error: {response.error.message}")
-        
-        texts = response.text_annotations
-        if texts:
-            print(f"Successfully extracted text: '{texts[0].description[:70]}...'")
-            return texts[0].description
-        else:
-            print("Vision API returned a valid response but found no text annotations.")
-            return ""
-
-    except Exception as e:
-        print(f"An exception occurred in the image_ocr function: {e}")
-        return None
+    print("OCR function called.")
+    print("Image bytes length:", len(image_bytes))
+    image = vision.Image(content=image_bytes)
+    response = vision_client.text_detection(image=image)
+    print("Vision API response:", response)
+    texts = response.text_annotations
+    if texts:
+        print("Extracted text:", texts[0].description)
+        return texts[0].description
+    print("No text found by OCR.")
+    return ""
 
 def get_ai_feedback(solution_text, problem_context="a math problem"):
     """Gets feedback on the solution text using the Gemini LLM."""
@@ -142,6 +125,7 @@ def analyze_whiteboard():
         print(f"Error uploading to Supabase: {e}")
     
     # 1. Google Vision OCR
+    print(image_bytes[:20])  # Print first 20 bytes of the image for debugging
     extracted_text = image_ocr(image_bytes)
     print(f"Extracted Text: {extracted_text[:100]}") 
 
