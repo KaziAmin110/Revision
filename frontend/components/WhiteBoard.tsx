@@ -11,10 +11,11 @@ import {
   Bot,
   CircleDot,
 } from "lucide-react";
-import { Sidebar } from "./Sidebar";
 import { Suggestion } from "./Suggestion";
 import { ProgressBar } from "./ProgressBar";
 import { NavigationControls } from "./NavigationControls";
+import { MathRenderer } from "./MathRenderer";
+import { Question } from "./Question";
 import { questions } from "@/src/questions";
 
 type AIFeedback = {
@@ -275,7 +276,6 @@ const Whiteboard = () => {
 
   return (
     <div className="flex w-screen h-screen bg-white overflow-hidden">
-      <Sidebar suggestions={suggestions} />
       <div className="w-full flex-1 flex flex-col bg-white overflow-hidden">
         <ProgressBar
           current={currentQuestionIndex + 1}
@@ -367,32 +367,46 @@ const Whiteboard = () => {
           </div>
         </div>
 
-        <div className="flex-grow w-full overflow-auto bg-white min-h-0 relative">
-          <canvas
-            ref={canvasRef}
-            onMouseDown={handleMouseDown}
-            onMouseUp={finishDrawing}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={finishDrawing}
-            onTouchStart={handleTouchStart}
-            onTouchEnd={finishDrawing}
-            // onTouchMove is now handled by the useEffect hook
-            className="cursor-crosshair"
-            style={{
-              transform: `scale(${scale})`,
-              transformOrigin: "top left",
-            }}
-          />
-          {feedback && (
-            <div
-              className={`absolute bottom-4 left-4 right-4 p-4 rounded-lg text-white shadow-lg ${
-                feedback.isCorrect ? "bg-green-600" : "bg-yellow-600"
-              }`}
-            >
-              <p className="font-bold">ProRev Assistant:</p>
-              <p>{feedback.suggestion}</p>
+        <div className="flex flex-1 overflow-hidden">
+          {/* Question Display Panel */}
+          <div className="w-80 bg-gray-50 border-r border-gray-200 overflow-y-auto">
+            <div className="p-4">
+              <Question 
+                question={currentQuestion}
+                showSuggestions={true}
+              />
             </div>
-          )}
+          </div>
+
+          {/* Canvas Area */}
+          <div className="flex-1 flex flex-col">
+            <div className="flex-grow w-full overflow-auto bg-white min-h-0 relative">
+              <canvas
+                ref={canvasRef}
+                onMouseDown={handleMouseDown}
+                onMouseUp={finishDrawing}
+                onMouseMove={handleMouseMove}
+                onMouseLeave={finishDrawing}
+                onTouchStart={handleTouchStart}
+                onTouchEnd={finishDrawing}
+                className="cursor-crosshair"
+                style={{
+                  transform: `scale(${scale})`,
+                  transformOrigin: "top left",
+                }}
+              />
+              {feedback && (
+                <div
+                  className={`absolute bottom-4 left-4 right-4 p-4 rounded-lg text-white shadow-lg ${
+                    feedback.isCorrect ? "bg-green-600" : "bg-yellow-600"
+                  }`}
+                >
+                  <p className="font-bold">ProRev Assistant:</p>
+                  <p>{feedback.suggestion}</p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         <NavigationControls
