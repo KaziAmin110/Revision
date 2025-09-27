@@ -119,7 +119,7 @@ export default function UploadPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div
               {...getRootProps()}
-              className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer ${
+              className={`flex flex-col items-center border-2 border-dashed rounded-xl p-8 text-center cursor-pointer ${
                 isDragActive
                   ? "border-cyan-400 bg-gray-800"
                   : "border-gray-600 hover:border-cyan-500"
@@ -133,7 +133,7 @@ export default function UploadPage() {
 
             <div
               onClick={startCamera}
-              className="border-2 border-dashed border-gray-600 hover:border-cyan-500 rounded-xl p-8 text-center cursor-pointer"
+              className="flex flex-col items-center border-2 border-dashed border-gray-600 hover:border-cyan-500 rounded-xl p-8 text-center cursor-pointer"
             >
               <Camera className="w-16 h-16 text-gray-500 mb-4" />
               <p>Take a picture</p>
