@@ -5,7 +5,7 @@ import google.generativeai as genai
 from google.cloud import vision
 import os
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = r"C:\Users\david\OneDrive\University of Central Florida\Year 4\Projects\Hackathons\ShellHacks 2025\gen-lang-client-0814143812-841deb3658f1.json"
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = r"C:\Users\david\OneDrive\University of Central Florida\Year 4\Projects\Hackathons\ShellHacks 2025\genkeyhere"
 
 testSolution = "1 + 2 = 43\n3 * 4 = 12\n12 / 2 = 6"
 
@@ -68,3 +68,4 @@ if __name__ == "__main__":
     app.run(debug=True)
 
     #AIzaSyARoGx7idpukvbbpnPa6QqneTX4FdNLVWM
+    #gen-lang-client-0814143812-841deb3658f1.json
