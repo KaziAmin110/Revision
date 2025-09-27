@@ -9,6 +9,7 @@ import {
   ZoomOut,
   Download,
   Bot,
+  CircleDot,
 } from "lucide-react";
 import { Sidebar } from "./Sidebar";
 import { Suggestion } from "./Suggestion";
@@ -26,7 +27,7 @@ const Whiteboard = () => {
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [tool, setTool] = useState<"pen" | "eraser">("pen");
-  const [color, setColor] = useState("#000000"); // Pen color
+  const [color, setColor] = useState("#000000");
   const [lineWidth, setLineWidth] = useState(3);
   const [scale, setScale] = useState(1);
 
@@ -34,18 +35,17 @@ const Whiteboard = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const currentQuestion = questions[currentQuestionIndex];
 
-  // --- NEW: State for AI feedback ---
   const [feedback, setFeedback] = useState<AIFeedback | null>(null);
   const [isLoadingFeedback, setIsLoadingFeedback] = useState(false);
+  const feedbackTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // --- FIX: Function to draw a white background ---
   const fillWhiteBackground = (context: CanvasRenderingContext2D) => {
     const canvas = context.canvas;
     context.save();
-    context.setTransform(1, 0, 0, 1, 0, 0); // Reset transform to fill properly
-    context.fillStyle = "white"; // Set fill style to white
-    context.fillRect(0, 0, canvas.width, canvas.height); // Fill the entire canvas
-    context.restore(); // Restore the previous transform state (scaling, etc.)
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.fillStyle = "white";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.restore();
   };
 
   const startDrawing = (x: number, y: number) => {
@@ -60,15 +60,28 @@ const Whiteboard = () => {
     if (contextRef.current) {
       contextRef.current.closePath();
       setIsDrawing(false);
+
+      if (feedbackTimerRef.current) {
+        clearTimeout(feedbackTimerRef.current);
+      }
+      feedbackTimerRef.current = setTimeout(() => {
+        if (!isLoadingFeedback) {
+          getAIFeedback();
+        }
+      }, 2500);
     }
   };
 
   const draw = (x: number, y: number) => {
     if (!isDrawing || !contextRef.current) return;
-    // For eraser, we draw with white color instead of cutting out transparency
+
+    if (feedbackTimerRef.current) {
+      clearTimeout(feedbackTimerRef.current);
+    }
+
     contextRef.current.globalCompositeOperation = "source-over";
     contextRef.current.strokeStyle = tool === "pen" ? color : "white";
-    contextRef.current.lineWidth = tool === "pen" ? lineWidth : lineWidth * 5; // Make eraser bigger
+    contextRef.current.lineWidth = tool === "pen" ? lineWidth : lineWidth * 5;
     contextRef.current.lineTo(x, y);
     contextRef.current.stroke();
   };
@@ -130,8 +143,8 @@ const Whiteboard = () => {
   const clearCanvas = () => {
     const context = contextRef.current;
     if (context) {
-      fillWhiteBackground(context); // FIX: Use the background fill function
-      setFeedback(null); // Clear previous feedback
+      fillWhiteBackground(context);
+      setFeedback(null);
     }
   };
 
@@ -159,7 +172,6 @@ const Whiteboard = () => {
         const context = canvas.getContext("2d");
         if (context) {
           context.scale(dpr, dpr);
-          // --- FIX: Fill background on initialization ---
           fillWhiteBackground(context);
           context.lineCap = "round";
           context.strokeStyle = color;
@@ -170,7 +182,6 @@ const Whiteboard = () => {
     };
     setCanvasDimensions();
     window.addEventListener("resize", setCanvasDimensions);
-    // Cleanup function to avoid memory leaks
     return () => window.removeEventListener("resize", setCanvasDimensions);
   }, []);
 
@@ -181,7 +192,6 @@ const Whiteboard = () => {
     }
   }, [color, lineWidth]);
 
-  // --- NEW: Function to send image to backend ---
   const getAIFeedback = async () => {
     if (!canvasRef.current) return;
 
@@ -197,7 +207,7 @@ const Whiteboard = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           image: base64Image,
-          problemContext: currentQuestion.title, // Send current question as context
+          problemContext: currentQuestion.title,
         }),
       });
 
@@ -240,14 +250,12 @@ const Whiteboard = () => {
     <div className="flex w-screen h-screen bg-white overflow-hidden">
       <Sidebar suggestions={suggestions} />
       <div className="w-full flex-1 flex flex-col bg-white overflow-hidden">
-        {/* ... ProgressBar ... */}
         <ProgressBar
           current={currentQuestionIndex + 1}
           total={questions.length}
         />
 
         <div className="toolbar bg-gray-900 p-4 flex items-center justify-between gap-2 border-b border-gray-700">
-          {/* ... Left side tools (pen, eraser, etc.) ... */}
           <div className="flex items-center gap-2">
             <button
               onClick={() => setTool("pen")}
@@ -289,22 +297,25 @@ const Whiteboard = () => {
               title="Line Width"
             />
           </div>
-          <div className="flex-grow text-white text-center font-semiobold">
+          <div className="flex-grow text-white text-center font-semibold">
             {" "}
-            <h1 className="text-2xl font-bold">{currentQuestion.title}</h1>{" "}
+            <h1 className="text-2xl">{currentQuestion.title}</h1>{" "}
           </div>
-          {/* ... Right side tools (zoom, download, etc.) ... */}
           <div className="flex items-center gap-2">
-            {/* --- NEW: Analyze Button --- */}
-            <button
-              onClick={getAIFeedback}
-              disabled={isLoadingFeedback}
-              className="p-2 flex items-center gap-2 bg-cyan-600 hover:bg-cyan-700 rounded text-white font-bold disabled:bg-gray-500"
-              title="Analyze Work"
-            >
-              <Bot size={20} />
-              {isLoadingFeedback ? "Analyzing..." : "Analyze"}
-            </button>
+            {/* --- MODIFIED: Replaced button with a status indicator --- */}
+            <div className="flex items-center gap-2 p-2 rounded bg-gray-700 text-white text-sm">
+              {isLoadingFeedback ? (
+                <>
+                  <Bot size={16} className="animate-spin" />
+                  <span>Analyzing...</span>
+                </>
+              ) : (
+                <>
+                  <CircleDot size={16} className="text-green-400" />
+                  <span>Listening...</span>
+                </>
+              )}
+            </div>
             <button
               onClick={() => handleZoom("in")}
               className="p-2 hover:bg-gray-700 rounded hover:cursor-pointer"
@@ -359,16 +370,15 @@ const Whiteboard = () => {
             onTouchStart={handleTouchStart}
             onTouchEnd={finishDrawing}
             onTouchMove={handleTouchMove}
-            className="cursor-crosshair" // Removed bg-white, handled by fill
+            className="cursor-crosshair"
             style={{
               transform: `scale(${scale})`,
               transformOrigin: "top left",
             }}
           />
-          {/* --- NEW: Display AI Feedback --- */}
           {feedback && (
             <div
-              className={`absolute bottom-4 left-4 right-4 p-4 rounded-lg text-white ${
+              className={`absolute bottom-4 left-4 right-4 p-4 rounded-lg text-white shadow-lg ${
                 feedback.isCorrect ? "bg-green-600" : "bg-yellow-600"
               }`}
             >
