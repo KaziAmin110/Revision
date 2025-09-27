@@ -34,13 +34,13 @@ export const SuggestionCard: React.FC<{ suggestion: Suggestion }> = ({
 
   return (
     <div
-      className={`bg-gray-800 p-3 rounded-lg border-l-4 ${config.borderColor}`}
+      className={`bg-white border border-gray-200 p-3 rounded-lg border-l-4 ${config.borderColor} shadow-sm`}
     >
       <div className="flex items-center gap-2 mb-2">
         {config.icon}
-        <h3 className="font-semibold text-white">{suggestion.title}</h3>
+        <h3 className="font-semibold text-gray-900">{suggestion.title}</h3>
       </div>
-      <p className="text-sm text-gray-300">{suggestion.content}</p>
+      <p className="text-sm text-gray-700">{suggestion.content}</p>
     </div>
   );
 };
