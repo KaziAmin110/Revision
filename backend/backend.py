@@ -1,30 +1,31 @@
-# GEMINI API KEY:
-#HI
 from flask import Flask, request, jsonify
-# import base64
-# import requests
+import base64
+import requests
 import google.generativeai as genai
-# from google.cloud import vision
+from google.cloud import vision
+import os
+
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = r"C:\Users\david\OneDrive\University of Central Florida\Year 4\Projects\Hackathons\ShellHacks 2025\gen-lang-client-0814143812-841deb3658f1.json"
 
 testSolution = "1 + 2 = 43\n3 * 4 = 12\n12 / 2 = 6"
 
 app = Flask(__name__)
 
-genai.configure(api_key="")
+genai.configure(api_key="AIzaSyARoGx7idpukvbbpnPa6QqneTX4FdNLVWM")
 
-# vision_client = vision.ImageAnnotatorClient()
+vision_client = vision.ImageAnnotatorClient()
 
-# def imageOCR(image_bytes):
-#     image = vision.Image(content=image_bytes)
-#     response = vision_client.text_detection(image=image)
-#     texts = response.text_annotations
-#     if texts:
-#         return texts[0].description
-#     return ""
+def imageOCR(image_bytes):
+    image = vision.Image(content=image_bytes)
+    response = vision_client.text_detection(image=image)
+    texts = response.text_annotations
+    if texts:
+        return texts[0].description
+    return ""
 
-# @app.route("/")
-# def home():
-#     return "Flask backend is running. Try /test_gemini."
+@app.route("/")
+def home():
+    return "Flask backend is running. Try /test_gemini."
 
 def checkSolution(solution_text):
     prompt = (
@@ -55,8 +56,8 @@ def upload_whiteBoard():
     imageBytes = imageFile.read()
 
     # Google Vision OCR
-    #extractedText = imageOCR(imageBytes)
-    extractedText = testSolution
+    extractedText = imageOCR(imageBytes)
+    #extractedText = testSolution
 
     # Recursive AI Check
     feedbackAI = checkSolution(extractedText)
@@ -65,3 +66,5 @@ def upload_whiteBoard():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+    #AIzaSyARoGx7idpukvbbpnPa6QqneTX4FdNLVWM
