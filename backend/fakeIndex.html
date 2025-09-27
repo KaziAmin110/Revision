@@ -1,37 +1,110 @@
-<!-- Save as index.html in your frontend folder -->
+<!-- Save as index.html and open in your browser -->
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>Whiteboard OCR + AI Checker</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      line-height: 1.6;
+      padding: 20px;
+    }
+
+    pre {
+      background-color: #f4f4f4;
+      padding: 10px;
+      border-radius: 5px;
+      white-space: pre-wrap;
+    }
+
+    #aiFeedback.correct {
+      border-left: 5px solid #28a745;
+    }
+
+    #aiFeedback.incorrect {
+      border-left: 5px solid #dc3545;
+    }
+  </style>
 </head>
+
 <body>
-  <h1>Upload Whiteboard Image</h1>
+  <h1>Upload Whiteboard Image for Analysis</h1>
+  <p>This page tests the <code>/api/analyze-work</code> endpoint.</p>
   <form id="uploadForm">
     <input type="file" id="imageInput" name="image" accept="image/*" required>
-    <button type="submit">Upload & Check</button>
+    <button type="submit">Analyze Image</button>
   </form>
-  <h2>Extracted Text:</h2>
-  <pre id="extractedText"></pre>
-  <h2>AI Feedback:</h2>
-  <pre id="aiFeedback"></pre>
+
+  <h2 style="margin-top: 2rem;">AI Feedback:</h2>
+  <div id="loading" style="display: none;">Analyzing...</div>
+  <pre id="aiFeedback">Awaiting analysis...</pre>
 
   <script>
-    document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+    document.getElementById('uploadForm').addEventListener('submit', async function (e) {
       e.preventDefault();
-      const formData = new FormData();
+
       const fileInput = document.getElementById('imageInput');
-      formData.append('image', fileInput.files[0]);
+      const file = fileInput.files[0];
+      if (!file) {
+        alert("Please select an image file.");
+        return;
+      }
 
-      const response = await fetch('http://127.0.0.1:5000/upload', {
-        method: 'POST',
-        body: formData
-      });
+      // Show loading indicator
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('aiFeedback').textContent = 'Awaiting analysis...';
 
-      const data = await response.json();
-      document.getElementById('extractedText').textContent = data.extractedText || 'No text found.';
-      document.getElementById('aiFeedback').textContent = data.feedbackAI || 'No feedback.';
+      // 1. Convert the image file to a Base64 string
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = async () => {
+        // The result includes a prefix like "data:image/png;base64," which we need to remove.
+        const base64Image = reader.result.split(',')[1];
+
+        // 2. Send the correct JSON payload to the new endpoint
+        try {
+          const response = await fetch('http://127.0.0.1:5001/api/analyze-work', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              image: base64Image,
+              problemContext: "Solve for x: 2x + 10 = 20" // Example context
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          // 3. Handle the new JSON response format
+          const data = await response.json();
+          const feedbackElement = document.getElementById('aiFeedback');
+
+          feedbackElement.textContent = data.suggestion || 'No suggestion received.';
+
+          // Add styling based on whether the answer is correct
+          feedbackElement.className = data.isCorrect ? 'correct' : 'incorrect';
+
+        } catch (error) {
+          console.error("Error sending request:", error);
+          document.getElementById('aiFeedback').textContent = `Error: ${error.message}`;
+        } finally {
+          // Hide loading indicator
+          document.getElementById('loading').style.display = 'none';
+        }
+      };
+
+      reader.onerror = (error) => {
+        console.error("Error reading file:", error);
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('aiFeedback').textContent = 'Error reading file.';
+      };
     });
   </script>
 </body>
+
 </html>
