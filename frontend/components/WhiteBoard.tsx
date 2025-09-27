@@ -197,28 +197,28 @@ const Whiteboard = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => handleZoom("in")}
-              className="p-2 hover:bg-gray-700 rounded"
+              className="p-2 hover:bg-gray-700 rounded hover:cursor-pointer"
               title="Zoom In"
             >
               <ZoomIn size={20} className="text-white hover:cursor-pointer" />
             </button>
             <button
               onClick={() => handleZoom("out")}
-              className="p-2 hover:bg-gray-700 rounded"
+              className="p-2 hover:bg-gray-700 rounded hover:cursor-pointer"
               title="Zoom Out"
             >
               <ZoomOut size={20} className="text-white hover:cursor-pointer" />
             </button>
             <button
               onClick={downloadCanvas}
-              className="p-2 hover:bg-gray-700 rounded"
+              className="p-2 hover:bg-gray-700 rounded hover:cursor-pointer"
               title="Download"
             >
               <Download size={20} className="text-white hover:cursor-pointer" />
             </button>
             <button
               onClick={clearCanvas}
-              className="p-2 hover:bg-red-500/20 text-red-400 rounded"
+              className="p-2 hover:bg-red-500/20 text-red-400 rounded hover:cursor-pointer"
               title="Clear Canvas"
             >
               <Trash2 size={20} className="hover:cursor-pointer" />

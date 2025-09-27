@@ -21,10 +21,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ suggestions }) => {
         {isOpen && <h2 className="text-xl font-bold">Suggestions</h2>}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="p-2 hover:bg-gray-700 rounded"
+          className="p-2 hover:bg-gray-700 rounded hover:cursor-pointer"
           title={isOpen ? "Collapse Sidebar" : "Expand Sidebar"}
         >
-          {isOpen ? <ChevronsLeft size={20} /> : <ChevronsRight size={20} />}
+          {isOpen ? (
+            <ChevronsLeft size={20} className="hover:cursor-pointer" />
+          ) : (
+            <ChevronsRight size={20} className="hover:cursor-pointer" />
+          )}
         </button>
       </div>
 
