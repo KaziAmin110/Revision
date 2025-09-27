@@ -155,7 +155,7 @@ export default function UploadPage() {
             >
               <input {...getInputProps()} />
               <UploadCloud className="w-16 h-16 text-gray-500 mb-4" />
-              <p>Drag & drop files or click</p>
+              <p>Drag & drop files</p>
               <p className="text-sm text-gray-500">Supports: JPEG, PNG, PDF</p>
             </div>
 
