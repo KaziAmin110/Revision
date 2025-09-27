@@ -138,11 +138,8 @@ export default function UploadPage() {
     <div className="bg-gray-900 min-h-screen text-white flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
       <div className="w-full max-w-3xl">
         <header className="text-center mb-8">
-          <h1 className="text-4xl sm:text-5xl font-bold text-cyan-400">
-            ProRev AI Assistant
-          </h1>
           <p className="text-lg text-gray-400 mt-2">
-            Upload or capture homework images/PDFs
+            Upload or Capture Homework Images/PDFs
           </p>
         </header>
 
