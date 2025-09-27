@@ -1,4 +1,4 @@
-# GEMINI API KEY: AIzaSyARoGx7idpukvbbpnPa6QqneTX4FdNLVWM
+# GEMINI API KEY:
 #HI
 from flask import Flask, request, jsonify
 # import base64
@@ -10,7 +10,7 @@ testSolution = "1 + 2 = 43\n3 * 4 = 12\n12 / 2 = 6"
 
 app = Flask(__name__)
 
-genai.configure(api_key="AIzaSyARoGx7idpukvbbpnPa6QqneTX4FdNLVWM")
+genai.configure(api_key="")
 
 # vision_client = vision.ImageAnnotatorClient()
 
