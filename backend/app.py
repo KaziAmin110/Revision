@@ -107,42 +107,43 @@ def analyze_whiteboard():
         return jsonify({"error": "No image data provided"}), 400
 
     try:
+        # Sets Reference to Decoded Base64 Image Data
         image_bytes = base64.b64decode(data["image"])
+    # Catches Any Exception and Returns JSON Error    
     except Exception as e:
         return jsonify({"error": f"Invalid Base64 image data: {e}"}), 400
-
     # Upload image to Supabase Storage before processing
     try:
-        bucket_name = "WhiteBoardImages" # As per your last version
+        # Sets SUPABASE Bucket Name and Image File Name for Upload
+        bucket_name = "WhiteBoardImages" 
         file_name = f"solution-{uuid.uuid4()}.png"
-        
+        # Uploads Image to Supabase Storage Bucket and logs Success
         supabase.storage.from_(bucket_name).upload(file_name, image_bytes, {
             "content-type": "image/png"
         })
         print(f"Image uploaded to Supabase as: {file_name}")
-
+    # Catches Any Exception and Logs Error
     except Exception as e:
         print(f"Error uploading to Supabase: {e}")
-    
-    # 1. Google Vision OCR
-    print(image_bytes[:20])  # Print first 20 bytes of the image for debugging
+    # Console Logs first 20 bytes of the Image for debugging
+    print(image_bytes[:20]) 
+    # Performs OCR and Logs Extracted Text (100 bytes)
     extracted_text = image_ocr(image_bytes)
     print(f"Extracted Text: {extracted_text[:100]}") 
-
+    # Checks If OCR Extraction Failed and Returns JSON Error
     if extracted_text is None:
         return jsonify({"error": "Failed to perform OCR on the image"}), 500
-    
+    # Checks If No Text was Extracted and Returns Default JSON Suggestion
     if not extracted_text.strip():
         return jsonify({
             "isCorrect": False,
             "suggestion": "I couldn't find any text in your drawing. Please write your solution on the whiteboard."
         })
-    
-
-    # 2. Get AI Feedback from Gemini
+    # Retrieves Problem Context from Request Data or Sets Default
     problem_context = data.get("problemContext", "a math problem")
+    # Retrieves AI Feedback using Extracted Text and Problem Context
     ai_feedback = get_ai_feedback(extracted_text, problem_context)
-    
+    # Returns AI Feedback as JSON Response
     return jsonify(ai_feedback)
 
 
