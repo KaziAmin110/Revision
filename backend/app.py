@@ -150,7 +150,8 @@ def generate_structured_questions(text_content):
 
     try:
         response = gemini_model.generate_content(prompt)
-        return json.loads(response.text)
+        cleaned_response = response.text.strip().replace("```json", "").replace("```", "")
+        return json.loads(cleaned_response)
     except Exception as e:
         print(f"Error generating or parsing JSON from LLM: {e}")
         print(f"LLM Raw Response Text: {response.text if 'response' in locals() else 'No response'}")

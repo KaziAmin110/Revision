@@ -230,7 +230,7 @@ export default function UploadPage() {
               <p className="font-medium">
                 {file ? "Replace current file" : "Drag & drop PDF or click"}
               </p>
-              <p className="text-sm text-gray-500">Supports: JPEG, PNG</p>
+              <p className="text-sm text-gray-500">Supports: PDF, JPEG, PNG</p>
               <p className="text-xs text-gray-400 mt-1">
                 Upload one document for parsing
               </p>
