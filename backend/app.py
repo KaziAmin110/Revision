@@ -74,7 +74,7 @@ try:
     # Retrieves Google Vision and Gemini Clients
     vision_client = vision.ImageAnnotatorClient()
     gemini_model_pro = genai.GenerativeModel("gemini-2.5-pro") # Using gemini-2.5-pro as flash-lite is not a standard model name
-    gemini_model_flash = genai.GenerativeModel("gemini-2.5-flash-lite") # Using gemini-1.5-flash as flash-lite is not a standard model name
+    gemini_model_flash = genai.GenerativeModel("gemini-2.5-flash") # Using gemini-1.5-flash as flash-lite is not a standard model name
 except Exception as e:
     print(f"FATAL: Could not initialize Google API clients: {e}")
     exit()
@@ -151,7 +151,7 @@ def get_ai_feedback(solution_text, problem_context="a math problem"):
             "suggestion": "<string, your feedback/suggestion for the student>"
         }}
 
-        Irrelevant answer are replied with a humorous response followed by a redirection/encoruagement to focus on math problem.
+        Irrelevant answers are replied with a humorous response followed by a redirection/encouragement to focus on the math problem.
 
     """
     # Tries to Generate Gemini JSON Response

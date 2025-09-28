@@ -521,7 +521,10 @@ const Whiteboard = () => {
                     feedback.isCorrect ? "bg-green-600" : "bg-yellow-600"
                   }`}
                 >
-                  <MathRenderer content={feedback.suggestion} />
+                  <MathRenderer
+                    content={feedback.suggestion}
+                    className="text-lg"
+                  />
                 </div>
               )}
             </div>
