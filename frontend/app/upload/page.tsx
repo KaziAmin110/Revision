@@ -266,26 +266,12 @@ export default function UploadPage() {
 
           {/* Single File Display */}
           {file && (
-            <div className="mt-8">
+            <div className="mt-8 flex flex-col items-center justify-center w-full">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">Current File</h2>
-                <button
-                  onClick={processFileWithOCR}
-                  disabled={isProcessing}
-                  className="bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-600 disabled:cursor-not-allowed px-4 py-2 rounded-lg font-medium transition-colors"
-                >
-                  {isProcessing ? (
-                    <div className="flex items-center gap-2">
-                      <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
-                      Parsing...
-                    </div>
-                  ) : (
-                    "Parse Document"
-                  )}
-                </button>
               </div>
 
-              <div className="bg-gray-800 p-4 rounded-lg flex items-center justify-between">
+              <div className="bg-gray-800 p-4 rounded-lg flex items-center justify-between w-full">
                 <div className="flex items-center gap-3">
                   <FileIcon className="w-6 h-6 text-cyan-400" />
                   <a
@@ -299,50 +285,25 @@ export default function UploadPage() {
                 </div>
                 <button
                   onClick={() => removeFile(file.name)}
-                  className="text-red-500 hover:text-red-400"
+                  className="text-red-500 hover:text-red-400 hover:cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
-            </div>
-          )}
-
-          {/* OCR Result */}
-          {ocrResult && (
-            <div className="mt-8 bg-gray-800 rounded-lg p-6 border border-gray-600">
-              <h3 className="text-xl font-semibold mb-4">
-                Document Parsing Result
-              </h3>
-              <div className="flex items-start gap-4">
-                <div className="flex-shrink-0">
-                  <CheckCircle className="text-green-400" size={24} />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm mb-2 text-green-300">
-                    Document successfully parsed
-                  </p>
-                  {ocrResult.extractedText && (
-                    <div className="mt-3 p-4 bg-gray-700 rounded border-l-4 border-cyan-400">
-                      <p className="text-sm text-gray-400 mb-2">
-                        Extracted Text:
-                      </p>
-                      <p className="text-white whitespace-pre-wrap leading-relaxed">
-                        {ocrResult.extractedText}
-                      </p>
-                    </div>
-                  )}
-                  {ocrResult.suggestion && (
-                    <div className="mt-3 p-3 bg-blue-900/30 rounded border border-blue-600">
-                      <p className="text-sm text-blue-400 mb-1">
-                        Additional Notes:
-                      </p>
-                      <p className="text-blue-200 text-sm">
-                        {ocrResult.suggestion}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <button
+                onClick={processFileWithOCR}
+                disabled={isProcessing}
+                className="mt-8 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-600 disabled:cursor-not-allowed px-4 py-2 rounded-lg font-medium transition-colors w-full max-w-sm hover:cursor-pointer"
+              >
+                {isProcessing ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                    Parsing...
+                  </div>
+                ) : (
+                  "Parse Document"
+                )}
+              </button>
             </div>
           )}
         </main>
