@@ -439,8 +439,7 @@ const Whiteboard = () => {
             />
           </div>
 
-          {/* FIX: Added min-w-0 to allow this flex item to shrink below its content size, preventing overflow. */}
-          <div className="flex-grow text-white text-center font-semibold min-w-0">
+          <div className="flex-grow text-white text-center font-semibold">
             <MathRenderer
               className="text-2xl"
               content={currentQuestion.title}
