@@ -11,17 +11,135 @@ import {
   Bot,
   CircleDot,
 } from "lucide-react";
-import { Suggestion } from "./Suggestion";
-import { ProgressBar } from "./ProgressBar";
-import { NavigationControls } from "./NavigationControls";
-import { MathRenderer } from "./MathRenderer";
-import { Question } from "./Question";
-import { questions } from "@/src/questions";
+
+// --- Type Definitions ---
+type SuggestionType = {
+  type: "info" | "logic" | "feedback";
+  title: string;
+  content: string;
+};
+
+type QuestionType = {
+  id: number;
+  title: string;
+  suggestions: SuggestionType[];
+};
 
 type AIFeedback = {
   isCorrect: boolean;
   suggestion: string;
 };
+
+// --- Default Questions ---
+const defaultQuestions: QuestionType[] = [
+  {
+    id: 1,
+    title: "Solve for $x$: $2x - 4 = 10$",
+    suggestions: [
+      {
+        type: "info",
+        title: "Equation Type",
+        content: "This is a two-step linear equation.",
+      },
+      {
+        type: "logic",
+        title: "Isolate X",
+        content:
+          "First, add 4 to both sides of the equation. Then, divide by 2.",
+      },
+      {
+        type: "feedback",
+        title: "Check Your Answer",
+        content: "The correct answer is $x=7$.",
+      },
+    ],
+  },
+];
+
+// --- FIX: Inlined Component Definitions ---
+// The missing components are now defined here to resolve the import errors.
+const Suggestion = ({ suggestion }: { suggestion: SuggestionType }) => (
+  <div className="mt-4 p-3 bg-gray-100 rounded-lg">
+    <p className="font-semibold text-gray-800">{suggestion.title}</p>
+    <MathRenderer
+      content={suggestion.content}
+      className="text-gray-600 text-md"
+    />
+  </div>
+);
+
+const ProgressBar = ({
+  current,
+  total,
+}: {
+  current: number;
+  total: number;
+}) => (
+  <div className="w-full bg-gray-200 h-2 rounded-full">
+    <div
+      className="bg-cyan-500 h-2 rounded-full transition-all duration-500"
+      style={{ width: `${(current / total) * 100}%` }}
+    ></div>
+  </div>
+);
+
+const NavigationControls = ({
+  onPrev,
+  onNext,
+  currentIndex,
+  totalQuestions,
+}: {
+  onPrev: () => void;
+  onNext: () => void;
+  currentIndex: number;
+  totalQuestions: number;
+}) => (
+  <div className="flex justify-between items-center p-4 bg-gray-100 border-t border-gray-200">
+    <button
+      onClick={onPrev}
+      disabled={currentIndex === 0}
+      className="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-400 transition-colors"
+    >
+      Previous
+    </button>
+    <span className="font-medium text-gray-700">
+      Question {currentIndex + 1} of {totalQuestions}
+    </span>
+    <button
+      onClick={onNext}
+      disabled={currentIndex >= totalQuestions - 1}
+      className="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-400 transition-colors"
+    >
+      Next
+    </button>
+  </div>
+);
+
+const MathRenderer = ({
+  content,
+  className,
+}: {
+  content: string;
+  className?: string;
+}) => (
+  <div className={className}>{content.replace(/\$/g, "")}</div> // Simple renderer, removes LaTeX delimiters
+);
+
+const Question = ({
+  question,
+  showSuggestions,
+}: {
+  question: QuestionType;
+  showSuggestions: boolean;
+}) => (
+  <div>
+    <h2 className="text-xl font-bold mb-4 text-gray-900">
+      {question.title.replace(/\$/g, "")}
+    </h2>
+    {showSuggestions &&
+      question.suggestions.map((s, i) => <Suggestion key={i} suggestion={s} />)}
+  </div>
+);
 
 const Whiteboard = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -32,14 +150,31 @@ const Whiteboard = () => {
   const [lineWidth, setLineWidth] = useState(3);
   const [scale, setScale] = useState(1);
 
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const currentQuestion = questions[currentQuestionIndex];
+  const [questions, setQuestions] = useState<QuestionType[]>(defaultQuestions);
 
   const [feedback, setFeedback] = useState<AIFeedback | null>(null);
   const [isLoadingFeedback, setIsLoadingFeedback] = useState(false);
 
   const feedbackTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load questions from sessionStorage on initial component mount
+  useEffect(() => {
+    const storedData = sessionStorage.getItem("extractedQuestions");
+    if (storedData) {
+      try {
+        const parsedQuestions = JSON.parse(storedData);
+        if (Array.isArray(parsedQuestions) && parsedQuestions.length > 0) {
+          setQuestions(parsedQuestions);
+        }
+      } catch (error) {
+        console.error("Error parsing stored questions:", error);
+      }
+    }
+  }, []); // Empty dependency array ensures this runs only once
+
+  // Derive the current question from state
+  const currentQuestion = questions[currentQuestionIndex];
 
   const fillWhiteBackground = (context: CanvasRenderingContext2D) => {
     const canvas = context.canvas;
@@ -53,7 +188,6 @@ const Whiteboard = () => {
   const startDrawing = (x: number, y: number) => {
     if (contextRef.current) {
       setFeedback(null);
-
       contextRef.current.beginPath();
       contextRef.current.moveTo(x, y);
       setIsDrawing(true);
@@ -145,22 +279,19 @@ const Whiteboard = () => {
     }
   };
 
-  const clearCanvas = () => {
+  const clearCanvas = useCallback(() => {
     const context = contextRef.current;
     if (context) {
       fillWhiteBackground(context);
       setFeedback(null);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    setSuggestions([]);
-    const timer = setTimeout(() => {
-      setSuggestions(currentQuestion.suggestions);
-    }, 500);
-    clearCanvas();
-    return () => clearTimeout(timer);
-  }, [currentQuestionIndex, currentQuestion.suggestions]);
+    if (currentQuestion) {
+      clearCanvas();
+    }
+  }, [currentQuestionIndex, currentQuestion, clearCanvas]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -219,7 +350,7 @@ const Whiteboard = () => {
   }, [color, lineWidth]);
 
   const getAIFeedback = async () => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current || !currentQuestion) return;
 
     const imageDataUrl = canvasRef.current.toDataURL("image/png");
     const base64Image = imageDataUrl.split(",")[1];
@@ -227,17 +358,14 @@ const Whiteboard = () => {
     setIsLoadingFeedback(true);
 
     try {
-      const response = await fetch(
-        "https://revision-backend-p35l.onrender.com/api/analyze-work",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            image: base64Image,
-            problemContext: currentQuestion.title,
-          }),
-        }
-      );
+      const response = await fetch("http://localhost:5001/api/analyze-work", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          image: base64Image,
+          problemContext: currentQuestion.title,
+        }),
+      });
 
       if (!response.ok) {
         throw new Error("Failed to get feedback from the server.");
@@ -273,6 +401,14 @@ const Whiteboard = () => {
       return Math.max(0.5, Math.min(newScale, 3));
     });
   };
+
+  if (!currentQuestion) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        Loading questions...
+      </div>
+    );
+  }
 
   return (
     <div className="flex w-screen h-screen bg-white overflow-hidden">

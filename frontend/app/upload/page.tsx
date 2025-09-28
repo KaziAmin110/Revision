@@ -11,6 +11,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
+import { useRouter } from "next/navigation";
 
 interface OCRResult {
   isCorrect?: boolean;
@@ -37,6 +38,7 @@ export default function UploadPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [ocrResult, setOcrResult] = useState<OCRResult | null>(null);
   const [error, setError] = useState<string>("");
+  const router = useRouter();
 
   // Convert file to base64
   const fileToBase64 = (file: File): Promise<string> => {
@@ -137,6 +139,9 @@ export default function UploadPage() {
 
       const result = await response.json();
       setOcrResult(result);
+
+      sessionStorage.setItem("extractedQuestions", JSON.stringify(result));
+      router.push("/whiteboard");
     } catch (error) {
       console.error("Document parsing error:", error);
       setError(
