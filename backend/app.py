@@ -19,6 +19,8 @@ import os
 import json
 import uuid  # Used to generate unique filenames
 from supabase import create_client, Client  # Import Supabase client
+from werkzeug.utils import secure_filename
+# Removed 'import magic' as it's no longer needed and caused the error.
 
 # -------------------------------------------------------------------------------------------------
 #   APP CONFIGURATION
@@ -31,9 +33,15 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-# -------------------------------------------------------------------------------------------------
-#   GOOGLE API CLIENT SETUP
-# -------------------------------------------------------------------------------------------------
+# A good practice to define allowed extensions
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
+
+def allowed_file(filename):
+    """Checks if a file's extension is allowed."""
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# --- API Client Initialization ---
 
 # Retrieves Google Cloud Vision API Service using Key File
 gcp_keyfile = os.getenv("CGP_KEYFILE")
@@ -65,9 +73,8 @@ try:
 
     # Retrieves Google Vision and Gemini Clients
     vision_client = vision.ImageAnnotatorClient()
-    gemini_model = genai.GenerativeModel("gemini-2.5-flash-lite")
-
-except Exception as e: # Catches Any Exception, Prints Error, and Ends App
+    gemini_model = genai.GenerativeModel("gemini-2.5-pro") # Using gemini-2.5-pro as flash-lite is not a standard model name
+except Exception as e:
     print(f"FATAL: Could not initialize Google API clients: {e}")
     exit()
 
@@ -98,26 +105,20 @@ except Exception as e: # Catches Any Exception, Prints Error, and Ends App
 
 # Parses Image using Google Vision OCR
 def image_ocr(image_bytes):
-
-    # Prints Initial Console Log Statements
+    """Performs OCR on the given image bytes using Google Cloud Vision."""
     print("OCR function called.")
-    print("Image bytes length:", len(image_bytes))
-
-    # Sets Up Image for Google Vision Reference
     image = vision.Image(content=image_bytes)
 
     # Performs and Logs Text Extraction OCR on Image for Response
     response = vision_client.text_detection(image=image)
-    print("Vision API response:", response)
-
-    #Sets Reference to Extracted Text
+    if response.error.message:
+        print(f"Vision API Error: {response.error.message}")
+        return ""
     texts = response.text_annotations
 
     # Checks If the Extracted Text Exists
     if texts:
-
-        # Logs and Returns Extracted Text Description
-        print("Extracted text:", texts[0].description)
+        print("Extracted text successfully.")
         return texts[0].description
     
     # Logs and Returns Empty String If NO Text Found
@@ -133,6 +134,9 @@ def get_ai_feedback(solution_text, problem_context="a math problem"):
         Analyze their handwritten work provided as text. Your task is to provide a single, concise piece of feedback.
         - If the work is correct so far, praise them and suggest the next logical step.
         - If there is a mistake, gently point it out and provide a hint to correct it. Do not give the full answer.
+        - Use the following format for LaTeX commands: \\frac, \\sqrt, \\int, \\sum, and similar commands.
+
+
         - Keep your feedback to one or two sentences.
 
         The student's work is:
@@ -171,7 +175,111 @@ def get_ai_feedback(solution_text, problem_context="a math problem"):
 #   APP ROUTE AND ENDPOINTS
 # -------------------------------------------------------------------------------------------------
 
-# Analyzes Whiteboard Image and Returns AI Feedback JSON
+def generate_structured_questions(text_content):
+    """
+    Uses the Gemini model to identify questions in the text and format them
+    with suggestions into a specific JSON structure.
+    """
+    prompt = f"""
+    Based on the following text extracted from a document, identify all the questions.
+    For each question, format it into a JSON object with "id", "title", and "suggestions".
+
+    1.  **id**: A unique integer, starting from 1.
+    2.  **title**: The question text. Use LaTeX for all math/scientific notations (e.g., $x^2$, \\text{{H}}_2\\text{{O}}).
+    3.  **suggestions**: An array of exactly three objects, each with a "type", "title", and "content".
+        - **type**: Must be one of "info", "logic", or "feedback".
+        - **"info"**: Provides context or identifies the type of problem.
+        - **"logic"**: Suggests a method or logical steps for solving.
+        - **"feedback"**: Offers a way to check the answer.
+
+    Your response must be ONLY a valid JSON array of these objects. Do not include markdown formatting like ```json or any other explanatory text.
+
+    Example of desired output format:
+    [
+      {{
+        "id": 1,
+        "title": "Solve for $x$: $x + 5 = 12$",
+        "suggestions": [
+          {{ "type": "info", "title": "Equation Type", "content": "This is a simple linear equation with one variable." }},
+          {{ "type": "logic", "title": "Solution Method", "content": "Isolate the variable by performing the same operation on both sides of the equation." }},
+          {{ "type": "feedback", "title": "Check Your Work", "content": "Substitute your answer back into the original equation to verify it's correct." }}
+        ]
+      }}
+    ]
+
+    Now, process the following text:
+    ---
+    {text_content}
+    ---
+    """
+
+    try:
+        response = gemini_model.generate_content(prompt)
+        cleaned_response = response.text.strip().replace("```json", "").replace("```", "")
+        return json.loads(cleaned_response)
+    except Exception as e:
+        print(f"Error generating or parsing JSON from LLM: {e}")
+        print(f"LLM Raw Response Text: {response.text if 'response' in locals() else 'No response'}")
+        return None
+
+# --- API Routes ---
+ 
+@app.route('/api/extract-questions', methods=['POST'])
+def extract_questions_route():
+    """
+    Handles file upload, extracts questions via OCR, and returns them in a
+    structured JSON format with generated suggestions.
+    """
+    if 'file' not in request.files:
+        print(1)
+        return jsonify({"error": "No file part in the request"}), 400
+
+    file = request.files['file']
+
+    if file.filename == '':
+        print(2)
+        return jsonify({"error": "No file selected"}), 400
+
+    if not (file and allowed_file(file.filename)):
+        print(3)
+        return jsonify({"error": "File type not allowed"}), 400
+
+    try:
+        filename = secure_filename(file.filename)
+        unique_filename = f"{uuid.uuid4()}-{filename}"
+        
+        file_bytes = file.read()
+        
+        # --- FIX ---
+        # Removed the problematic 'magic' library.
+        # The file object from Flask already knows its own content type.
+        mime_type = file.mimetype
+        if mime_type not in ['image/png', 'image/jpeg', 'application/pdf']:
+             return jsonify({"error": f"Unsupported file content type: {mime_type}"}), 400
+
+        supabase.storage.from_("PDFBucket").upload(
+            file=file_bytes,
+            path=unique_filename,
+            file_options={"content-type": mime_type}
+        )
+
+        # --- FIX ---
+        # The image_ocr function call was passing too many arguments. Corrected it.
+        extracted_text = image_ocr(file_bytes)
+        if not extracted_text:
+            return jsonify({"error": "Could not extract text from the document."}), 500
+
+        structured_questions = generate_structured_questions(extracted_text)
+        print(structured_questions)
+        if structured_questions is None:
+            return jsonify({"error": "Failed to generate structured questions from the text."}), 500
+
+        return jsonify(structured_questions), 200
+
+    except Exception as e:
+        print(f"An unexpected error occurred in extract-questions: {e}")
+        return jsonify({"error": "An internal server error occurred.", "details": str(e)}), 500
+
 @app.route("/api/analyze-work", methods=["POST"])
 def analyze_whiteboard():
 
@@ -191,32 +299,18 @@ def analyze_whiteboard():
     # Catches Any Exception and Returns JSON Error    
     except Exception as e:
         return jsonify({"error": f"Invalid Base64 image data: {e}"}), 400
-
-    # Upload image to Supabase Storage before processing
+    
     try:
-        
-        # Sets SUPABASE Bucket Name and Image File Name for Upload
         bucket_name = "WhiteBoardImages" 
         file_name = f"solution-{uuid.uuid4()}.png"
-        
-        # Uploads Image to Supabase Storage Bucket and logs Success
         supabase.storage.from_(bucket_name).upload(file_name, image_bytes, {
             "content-type": "image/png"
         })
         print(f"Image uploaded to Supabase as: {file_name}")
-
-    # Catches Any Exception and Logs Error
     except Exception as e:
         print(f"Error uploading to Supabase: {e}")
-    
-    # Console Logs first 20 bytes of the Image for debugging
-    print(image_bytes[:20]) 
 
-    # Performs OCR and Logs Extracted Text (100 bytes)
     extracted_text = image_ocr(image_bytes)
-    print(f"Extracted Text: {extracted_text[:100]}") 
-
-    # Checks If OCR Extraction Failed and Returns JSON Error
     if extracted_text is None:
         return jsonify({"error": "Failed to perform OCR on the image"}), 500
     
@@ -226,14 +320,10 @@ def analyze_whiteboard():
             "isCorrect": False,
             "suggestion": "I couldn't find any text in your drawing. Please write your solution on the whiteboard."
         })
-    
-    # Retrieves Problem Context from Request Data or Sets Default
     problem_context = data.get("problemContext", "a math problem")
 
     # Retrieves AI Feedback using Extracted Text and Problem Context
     ai_feedback = get_ai_feedback(extracted_text, problem_context)
-    
-    # Returns AI Feedback as JSON Response
     return jsonify(ai_feedback)
 
 # -------------------------------------------------------------------------------------------------
