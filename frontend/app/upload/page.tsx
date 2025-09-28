@@ -125,7 +125,7 @@ export default function UploadPage() {
       formData.append("file", file.file);
 
       const response = await fetch(
-        "https://revision-backend-p35l.onrender.com/api/extract-questions",
+        "http://localhost:5001/api/extract-questions",
         {
           method: "POST",
           body: formData,
