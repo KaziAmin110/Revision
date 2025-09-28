@@ -2,7 +2,14 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
-import { UploadCloud, File as FileIcon, X, Camera, CheckCircle, AlertCircle } from "lucide-react";
+import {
+  UploadCloud,
+  File as FileIcon,
+  X,
+  Camera,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
 interface OCRResult {
@@ -29,66 +36,70 @@ export default function UploadPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [ocrResult, setOcrResult] = useState<OCRResult | null>(null);
-  const [error, setError] = useState<string>('');
-  
+  const [error, setError] = useState<string>("");
+
   // Convert file to base64
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => {
         const result = reader.result as string;
-        const base64 = result.split(',')[1];
+        const base64 = result.split(",")[1];
         resolve(base64);
       };
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
   };
-  
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    if (acceptedFiles.length === 0) return;
-    const selectedFile = acceptedFiles[0];
-    setUploading(true);
-    setError('');
-    try {
-      if (file) { 
-        await removeFile(file.name); 
-      }
-      const fileName = `${Date.now()}-${selectedFile.name}`;
-      const { data, error } = await supabase.storage
-        .from("PDFBucket")
-        .upload(fileName, selectedFile);
+
+  const onDrop = useCallback(
+    async (acceptedFiles: File[]) => {
+      if (acceptedFiles.length === 0) return;
+      const selectedFile = acceptedFiles[0];
+      setUploading(true);
+      setError("");
+      try {
+        if (file) {
+          await removeFile(file.name);
+        }
+        const fileName = `${Date.now()}-${selectedFile.name}`;
+        const { data, error } = await supabase.storage
+          .from("PDFBucket")
+          .upload(fileName, selectedFile);
         if (error) throw error;
-        const{ data: urlData } = supabase.storage
+        const { data: urlData } = supabase.storage
           .from("PDFBucket")
           .getPublicUrl(fileName);
-          setFile({
-            file: selectedFile,
-            preview: URL.createObjectURL(selectedFile),
-            name: fileName,
-            url: urlData.publicUrl,
-          });
-          setOcrResult(null);
-    } catch (error) {
-      console.error("Upload error:", error);
-      setError("Failed to upload file.");
-    } finally {
-      setUploading(false);
-    }
-  }, [file]);
-  
+        setFile({
+          file: selectedFile,
+          preview: URL.createObjectURL(selectedFile),
+          name: fileName,
+          url: urlData.publicUrl,
+        });
+        setOcrResult(null);
+      } catch (error) {
+        console.error("Upload error:", error);
+        setError("Failed to upload file.");
+      } finally {
+        setUploading(false);
+      }
+    },
+    [file]
+  );
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      "application/pdf": [".pdf"],
       "image/*": [".jpeg", ".png", ".jpg"],
     },
     multiple: false,
     maxFiles: 1,
   });
-  
+
   const removeFile = async (fileName: string) => {
-    const { error } = await supabase.storage.from("PDFBucket").remove([fileName]);
+    const { error } = await supabase.storage
+      .from("PDFBucket")
+      .remove([fileName]);
     if (error) {
       console.error("Delete error:", error);
     } else {
@@ -100,27 +111,25 @@ export default function UploadPage() {
   // Process single file with OCR
   const processFileWithOCR = async () => {
     if (!file) {
-      setError('Please upload a file first.');
+      setError("Please upload a file first.");
       return;
     }
 
     setIsProcessing(true);
-    setError('');
+    setError("");
     setOcrResult(null);
 
     try {
-      const base64Image = await fileToBase64(file.file);
-      
-      const response = await fetch('http://localhost:5001/api/analyze-work', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          image: base64Image,
-          problemContext: 'document parsing for text extraction'
-        })
-      });
+      const formData = new FormData();
+      formData.append("file", file.file);
+
+      const response = await fetch(
+        "http://localhost:5001/api/extract-questions",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -129,8 +138,12 @@ export default function UploadPage() {
       const result = await response.json();
       setOcrResult(result);
     } catch (error) {
-      console.error('Document parsing error:', error);
-      setError(`Failed to parse document: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error("Document parsing error:", error);
+      setError(
+        `Failed to parse document: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -217,8 +230,10 @@ export default function UploadPage() {
               <p className="font-medium">
                 {file ? "Replace current file" : "Drag & drop PDF or click"}
               </p>
-              <p className="text-sm text-gray-500">Supports: PDF, JPEG, PNG</p>
-              <p className="text-xs text-gray-400 mt-1">Upload one document for parsing</p>
+              <p className="text-sm text-gray-500">Supports: JPEG, PNG</p>
+              <p className="text-xs text-gray-400 mt-1">
+                Upload one document for parsing
+              </p>
             </div>
 
             <div
@@ -230,7 +245,9 @@ export default function UploadPage() {
               <p className="text-sm text-gray-500">
                 {file ? "Replace with photo" : "Photograph documents"}
               </p>
-              <p className="text-xs text-gray-400 mt-1">For documents or handwritten text</p>
+              <p className="text-xs text-gray-400 mt-1">
+                For documents or handwritten text
+              </p>
             </div>
           </div>
 
@@ -263,11 +280,11 @@ export default function UploadPage() {
                       Parsing...
                     </div>
                   ) : (
-                    'Parse Document'
+                    "Parse Document"
                   )}
                 </button>
               </div>
-              
+
               <div className="bg-gray-800 p-4 rounded-lg flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <FileIcon className="w-6 h-6 text-cyan-400" />
@@ -293,7 +310,9 @@ export default function UploadPage() {
           {/* OCR Result */}
           {ocrResult && (
             <div className="mt-8 bg-gray-800 rounded-lg p-6 border border-gray-600">
-              <h3 className="text-xl font-semibold mb-4">Document Parsing Result</h3>
+              <h3 className="text-xl font-semibold mb-4">
+                Document Parsing Result
+              </h3>
               <div className="flex items-start gap-4">
                 <div className="flex-shrink-0">
                   <CheckCircle className="text-green-400" size={24} />
@@ -304,14 +323,22 @@ export default function UploadPage() {
                   </p>
                   {ocrResult.extractedText && (
                     <div className="mt-3 p-4 bg-gray-700 rounded border-l-4 border-cyan-400">
-                      <p className="text-sm text-gray-400 mb-2">Extracted Text:</p>
-                      <p className="text-white whitespace-pre-wrap leading-relaxed">{ocrResult.extractedText}</p>
+                      <p className="text-sm text-gray-400 mb-2">
+                        Extracted Text:
+                      </p>
+                      <p className="text-white whitespace-pre-wrap leading-relaxed">
+                        {ocrResult.extractedText}
+                      </p>
                     </div>
                   )}
                   {ocrResult.suggestion && (
                     <div className="mt-3 p-3 bg-blue-900/30 rounded border border-blue-600">
-                      <p className="text-sm text-blue-400 mb-1">Additional Notes:</p>
-                      <p className="text-blue-200 text-sm">{ocrResult.suggestion}</p>
+                      <p className="text-sm text-blue-400 mb-1">
+                        Additional Notes:
+                      </p>
+                      <p className="text-blue-200 text-sm">
+                        {ocrResult.suggestion}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -325,9 +352,13 @@ export default function UploadPage() {
           <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
             <div className="bg-gray-800 rounded-xl p-6 max-w-2xl w-full mx-4">
               <div className="text-center mb-4">
-                <h3 className="text-lg font-semibold text-white">Take a Photo</h3>
+                <h3 className="text-lg font-semibold text-white">
+                  Take a Photo
+                </h3>
                 <p className="text-sm text-gray-400">
-                  {file ? "This will replace your current document" : "Capture your document for parsing"}
+                  {file
+                    ? "This will replace your current document"
+                    : "Capture your document for parsing"}
                 </p>
               </div>
               <video

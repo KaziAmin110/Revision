@@ -320,7 +320,10 @@ const Whiteboard = () => {
             />
           </div>
           <div className="flex-grow text-white text-center font-semibold">
-            <h1 className="text-2xl">{currentQuestion.title}</h1>
+            <MathRenderer
+              className="text-2xl"
+              content={currentQuestion.title}
+            />
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 p-2 rounded bg-gray-700 text-white text-sm">
@@ -371,10 +374,7 @@ const Whiteboard = () => {
           {/* Question Display Panel */}
           <div className="w-80 bg-gray-50 border-r border-gray-200 overflow-y-auto">
             <div className="p-4">
-              <Question 
-                question={currentQuestion}
-                showSuggestions={true}
-              />
+              <Question question={currentQuestion} showSuggestions={true} />
             </div>
           </div>
 
