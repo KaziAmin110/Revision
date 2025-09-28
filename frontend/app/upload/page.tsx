@@ -7,7 +7,6 @@ import {
   File as FileIcon,
   X,
   Camera,
-  CheckCircle,
   AlertCircle,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";

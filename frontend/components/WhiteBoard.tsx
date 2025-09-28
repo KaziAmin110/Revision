@@ -11,14 +11,10 @@ import {
   Bot,
   CircleDot,
 } from "lucide-react";
+import { MathRenderer } from "./MathRenderer";
+import { SuggestionCard, type Suggestion as SuggestionType } from "./Suggestion";
 
 // --- Type Definitions ---
-type SuggestionType = {
-  type: "info" | "logic" | "feedback";
-  title: string;
-  content: string;
-};
-
 type QuestionType = {
   id: number;
   title: string;
@@ -55,17 +51,6 @@ const defaultQuestions: QuestionType[] = [
     ],
   },
 ];
-
-// --- FIX: Inlined Component Definitions ---
-const Suggestion = ({ suggestion }: { suggestion: SuggestionType }) => (
-  <div className="mt-4 p-3 bg-gray-100 rounded-lg">
-    <p className="font-semibold text-gray-800">{suggestion.title}</p>
-    <MathRenderer
-      content={suggestion.content}
-      className="text-gray-600 text-md"
-    />
-  </div>
-);
 
 const ProgressBar = ({
   current,
@@ -114,16 +99,6 @@ const NavigationControls = ({
   </div>
 );
 
-const MathRenderer = ({
-  content,
-  className,
-}: {
-  content: string;
-  className?: string;
-}) => (
-  <div className={className}>{content.replace(/\$/g, "")}</div> // Simple renderer, removes LaTeX delimiters
-);
-
 const Question = ({
   question,
   showSuggestions,
@@ -132,11 +107,12 @@ const Question = ({
   showSuggestions: boolean;
 }) => (
   <div>
-    <h2 className="text-xl font-bold mb-4 text-gray-900">
-      {question.title.replace(/\$/g, "")}
-    </h2>
+    <MathRenderer
+      content={question.title}
+      className="text-xl font-bold mb-4 text-gray-900"
+    />
     {showSuggestions &&
-      question.suggestions.map((s, i) => <Suggestion key={i} suggestion={s} />)}
+      question.suggestions.map((s, i) => <SuggestionCard key={i} suggestion={s} />)}
   </div>
 );
 

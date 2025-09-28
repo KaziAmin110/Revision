@@ -85,6 +85,9 @@ def get_ai_feedback(solution_text, problem_context="a math problem"):
         Analyze their handwritten work provided as text. Your task is to provide a single, concise piece of feedback.
         - If the work is correct so far, praise them and suggest the next logical step.
         - If there is a mistake, gently point it out and provide a hint to correct it. Do not give the full answer.
+        - Use the following format for LaTeX commands: \\frac, \\sqrt, \\int, \\sum, and similar commands.
+
+
         - Keep your feedback to one or two sentences.
 
         The student's work is:
