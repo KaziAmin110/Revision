@@ -32,7 +32,7 @@ load_dotenv()
 # Initializes Flask App and Cross Origin Resource Sharing
 app = Flask(__name__)
 allowed_origins = [
-    "https://revision-bay.vercel.app/",
+    "https://revision-bay.vercel.app/upload",
     "http://localhost:3000",
     "https://revision-backend-p35l.onrender.com",
 ]
