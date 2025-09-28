@@ -439,7 +439,7 @@ const Whiteboard = () => {
             />
           </div>
 
-          <div className="flex-grow text-white text-center font-semibold">
+          <div className="min-w-0 flex-grow text-white text-center font-semibold">
             <MathRenderer
               className="text-2xl"
               content={currentQuestion.title}
