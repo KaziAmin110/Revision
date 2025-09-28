@@ -125,7 +125,7 @@ def generate_structured_questions(text_content):
         - **type**: Must be one of "info", "logic", or "feedback".
         - **"info"**: Provides context or identifies the type of problem.
         - **"logic"**: Suggests a method or logical steps for solving.
-        - **"feedback"**: Offers a way to check the answer or provides the final correct answer/balanced equation.
+        - **"feedback"**: Offers a way to check the answer.
 
     Your response must be ONLY a valid JSON array of these objects. Do not include markdown formatting like ```json or any other explanatory text.
 

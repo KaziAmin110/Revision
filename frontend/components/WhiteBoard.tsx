@@ -57,7 +57,6 @@ const defaultQuestions: QuestionType[] = [
 ];
 
 // --- FIX: Inlined Component Definitions ---
-// The missing components are now defined here to resolve the import errors.
 const Suggestion = ({ suggestion }: { suggestion: SuggestionType }) => (
   <div className="mt-4 p-3 bg-gray-100 rounded-lg">
     <p className="font-semibold text-gray-800">{suggestion.title}</p>
