@@ -73,7 +73,8 @@ try:
 
     # Retrieves Google Vision and Gemini Clients
     vision_client = vision.ImageAnnotatorClient()
-    gemini_model = genai.GenerativeModel("gemini-2.5-pro") # Using gemini-2.5-pro as flash-lite is not a standard model name
+    gemini_model_pro = genai.GenerativeModel("gemini-2.5-pro") # Using gemini-2.5-pro as flash-lite is not a standard model name
+    gemini_model_flash = genai.GenerativeModel("gemini-1.5-flash") # Using gemini-1.5-flash as flash-lite is not a standard model name
 except Exception as e:
     print(f"FATAL: Could not initialize Google API clients: {e}")
     exit()
@@ -157,7 +158,7 @@ def get_ai_feedback(solution_text, problem_context="a math problem"):
     try:
 
         # Sets Response to Gemini Prompt-Generated Response
-        response = gemini_model.generate_content(prompt)
+        response = gemini_model_flash.generate_content(prompt)
 
         # Cleans and Returns Parsed JSON Response
         cleaned_response = response.text.strip().replace("```json", "").replace("```", "")
@@ -214,7 +215,7 @@ def generate_structured_questions(text_content):
     """
 
     try:
-        response = gemini_model.generate_content(prompt)
+        response = gemini_model_pro.generate_content(prompt)
         cleaned_response = response.text.strip().replace("```json", "").replace("```", "")
         return json.loads(cleaned_response)
     except Exception as e:
@@ -250,9 +251,6 @@ def extract_questions_route():
         
         file_bytes = file.read()
         
-        # --- FIX ---
-        # Removed the problematic 'magic' library.
-        # The file object from Flask already knows its own content type.
         mime_type = file.mimetype
         if mime_type not in ['image/png', 'image/jpeg', 'application/pdf']:
              return jsonify({"error": f"Unsupported file content type: {mime_type}"}), 400
@@ -263,14 +261,11 @@ def extract_questions_route():
             file_options={"content-type": mime_type}
         )
 
-        # --- FIX ---
-        # The image_ocr function call was passing too many arguments. Corrected it.
         extracted_text = image_ocr(file_bytes)
         if not extracted_text:
             return jsonify({"error": "Could not extract text from the document."}), 500
 
         structured_questions = generate_structured_questions(extracted_text)
-        print(structured_questions)
         if structured_questions is None:
             return jsonify({"error": "Failed to generate structured questions from the text."}), 500
 
