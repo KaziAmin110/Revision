@@ -338,14 +338,17 @@ const Whiteboard = () => {
     setIsLoadingFeedback(true);
 
     try {
-      const response = await fetch("http://localhost:5001/api/analyze-work", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          image: base64Image,
-          problemContext: currentQuestion.title,
-        }),
-      });
+      const response = await fetch(
+        "https://revision-backend-p35l.onrender.com/api/analyze-work",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            image: base64Image,
+            problemContext: currentQuestion.title,
+          }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to get feedback from the server.");
