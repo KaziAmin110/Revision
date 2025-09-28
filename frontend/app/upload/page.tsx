@@ -142,9 +142,9 @@ export default function UploadPage() {
       sessionStorage.setItem("extractedQuestions", JSON.stringify(result));
       router.push("/whiteboard");
     } catch (error) {
-      console.error("Document parsing error:", error);
+      console.error("I couldn't understand your document: ", error);
       setError(
-        `Failed to parse document: ${
+        `Failed to understand your document: ${
           error instanceof Error ? error.message : "Unknown error"
         }`
       );
@@ -207,12 +207,12 @@ export default function UploadPage() {
   }, [stream]);
 
   return (
-    <div className="bg-gray-900 min-h-screen text-white flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
+    <div className="bg-white min-h-screen text-black flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
       <div className="w-full max-w-3xl">
         <header className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">PDF Document Parser</h1>
+          <h1 className="text-3xl font-bold mb-2">Before we get started...</h1>
           <p className="text-lg text-gray-400 mt-2">
-            Upload PDF files to extract and parse text content
+            Upload your question images or PDF files to begin solving!
           </p>
           <p className="text-sm text-gray-500 mt-1">
             We parse your documents to extract text, not evaluate content
@@ -225,31 +225,31 @@ export default function UploadPage() {
               {...getRootProps()}
               className={`flex flex-col items-center border-2 border-dashed rounded-xl p-8 text-center cursor-pointer ${
                 isDragActive
-                  ? "border-cyan-400 bg-gray-800"
-                  : "border-gray-600 hover:border-cyan-500"
+                  ? "border-red-700 bg-gray-100"
+                  : "border-gray-300 hover:border-red-700"
               }`}
             >
               <input {...getInputProps()} />
-              <UploadCloud className="w-16 h-16 text-gray-500 mb-4" />
+              <UploadCloud className="w-16 h-16 text-black mb-4" />
               <p className="font-medium">
                 {file ? "Replace current file" : "Drag & drop PDF or click"}
               </p>
-              <p className="text-sm text-gray-500">Supports: PDF, JPEG, PNG</p>
-              <p className="text-xs text-gray-400 mt-1">
-                Upload one document for parsing
+              <p className="text-sm text-gray-600">Supports: PDF, JPG, PNG</p>
+              <p className="text-xs text-gray-500 mt-1">
+                Upload one document to begin practice
               </p>
             </div>
 
             <div
               onClick={startCamera}
-              className="flex flex-col items-center border-2 border-dashed border-gray-600 hover:border-cyan-500 rounded-xl p-8 text-center cursor-pointer"
+              className="flex flex-col items-center border-2 border-dashed border-gray-300 hover:border-red-700 rounded-xl p-8 text-center cursor-pointer bg-white"
             >
-              <Camera className="w-16 h-16 text-gray-500 mb-4" />
+              <Camera className="w-16 h-16 text-black mb-4" />
               <p className="font-medium">Take a photo</p>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-600">
                 {file ? "Replace with photo" : "Photograph documents"}
               </p>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-gray-500 mt-1">
                 For documents or handwritten text
               </p>
             </div>
@@ -257,14 +257,14 @@ export default function UploadPage() {
 
           {uploading && (
             <div className="text-center mt-4">
-              <p className="text-blue-500">Uploading...</p>
+              <p className="text-red-700">Uploading...</p>
             </div>
           )}
 
           {error && (
-            <div className="mt-4 p-4 bg-red-900/50 border border-red-600 rounded-lg flex items-start gap-2">
-              <AlertCircle className="text-red-400 mt-0.5" size={20} />
-              <p className="text-red-200">{error}</p>
+            <div className="mt-4 p-4 bg-red-50 border border-red-300 rounded-lg flex items-start gap-2">
+              <AlertCircle className="text-red-700 mt-0.5" size={20} />
+              <p className="text-red-800">{error}</p>
             </div>
           )}
 
@@ -275,37 +275,37 @@ export default function UploadPage() {
                 <h2 className="text-xl font-semibold">Current File</h2>
               </div>
 
-              <div className="bg-gray-800 p-4 rounded-lg flex items-center justify-between w-full">
+              <div className="bg-white p-4 rounded-lg flex items-center justify-between w-full border border-gray-200">
                 <div className="flex items-center gap-3">
-                  <FileIcon className="w-6 h-6 text-cyan-400" />
+                  <FileIcon className="w-6 h-6 text-black" />
                   <a
                     href={file.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-400 hover:underline truncate max-w-xs sm:max-w-md"
+                    className="text-black hover:underline truncate max-w-xs sm:max-w-md"
                   >
                     {file.name}
                   </a>
                 </div>
                 <button
                   onClick={() => removeFile(file.name)}
-                  className="text-red-500 hover:text-red-400 hover:cursor-pointer"
+                  className="text-red-600 hover:text-red-500 hover:cursor-pointer"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-5 h-5 text-black" />
                 </button>
               </div>
               <button
                 onClick={processFileWithOCR}
                 disabled={isProcessing}
-                className="mt-8 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-600 disabled:cursor-not-allowed px-4 py-2 rounded-lg font-medium transition-colors w-full max-w-sm hover:cursor-pointer"
+                className="mt-8 text-white bg-red-800 hover:bg-red-900 disabled:bg-gray-300 disabled:cursor-not-allowed px-4 py-2 rounded-lg font-medium transition-colors w-full max-w-sm hover:cursor-pointer"
               >
                 {isProcessing ? (
                   <div className="flex items-center gap-2">
                     <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
-                    Parsing...
+                    Cooking up your ReVision...
                   </div>
                 ) : (
-                  "Parse Document"
+                  "Begin Solving!"
                 )}
               </button>
             </div>
@@ -314,42 +314,42 @@ export default function UploadPage() {
 
         {/* Camera Modal */}
         {isCameraOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-            <div className="bg-gray-800 rounded-xl p-6 max-w-2xl w-full mx-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl p-6 max-w-2xl w-full mx-4 border border-gray-200">
               <div className="text-center mb-4">
-                <h3 className="text-lg font-semibold text-white">
+                <h3 className="text-lg font-semibold text-black">
                   Take a Photo
                 </h3>
-                <p className="text-sm text-gray-400">
+                <p className="text-sm text-gray-600">
                   {file
                     ? "This will replace your current document"
-                    : "Capture your document for parsing"}
+                    : "Capture your document to begin ReVising"}
                 </p>
               </div>
               <video
                 ref={videoRef}
                 autoPlay
                 playsInline
-                className="w-full h-64 bg-gray-900 rounded-lg object-cover"
+                className="w-full h-64 bg-gray-100 rounded-lg object-cover"
               />
               <canvas ref={canvasRef} className="hidden" />
               <div className="flex justify-center gap-4 mt-6">
                 <button
                   onClick={capturePhoto}
-                  className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center gap-2"
+                  className="bg-red-800 hover:bg-red-900 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center gap-2"
                 >
                   <Camera className="w-5 h-5" />
                   Capture
                 </button>
                 <button
                   onClick={stopCamera}
-                  className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+                  className="bg-gray-200 hover:bg-gray-300 text-black font-bold py-3 px-6 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
               </div>
-              <p className="text-sm text-gray-400 text-center mt-4">
-                Point your camera at the document and click capture
+              <p className="text-sm text-gray-600 text-center mt-4">
+                Point your camera at the document and click capture!
               </p>
             </div>
           </div>

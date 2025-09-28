@@ -64,7 +64,7 @@ const ProgressBar = ({
 }) => (
   <div className="w-full bg-gray-200 h-2 rounded-full">
     <div
-      className="bg-cyan-500 h-2 rounded-full transition-all duration-500"
+      className="bg-[#800000] h-2 transition-all duration-500"
       style={{ width: `${(current / total) * 100}%` }}
     ></div>
   </div>
@@ -127,7 +127,7 @@ const Whiteboard = () => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [tool, setTool] = useState<"pen" | "eraser">("pen");
   const [color, setColor] = useState("#000000");
-  const [lineWidth, setLineWidth] = useState(5);
+  const [lineWidth, setLineWidth] = useState(8);
   const [scale, setScale] = useState(1);
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -406,7 +406,7 @@ const Whiteboard = () => {
             <button
               onClick={() => setTool("pen")}
               className={`p-2 rounded ${
-                tool === "pen" ? "bg-cyan-500" : "hover:bg-gray-700"
+                tool === "pen" ? "bg-[#800000]" : "hover:bg-gray-700"
               }`}
               title="Pen"
             >
@@ -415,7 +415,7 @@ const Whiteboard = () => {
             <button
               onClick={() => setTool("eraser")}
               className={`p-2 rounded ${
-                tool === "eraser" ? "bg-cyan-500" : "hover:bg-gray-700"
+                tool === "eraser" ? "bg-[#800000]" : "hover:bg-gray-700"
               }`}
               title="Eraser"
             >
