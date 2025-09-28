@@ -214,9 +214,6 @@ export default function UploadPage() {
           <p className="text-lg text-gray-400 mt-2">
             Upload your question images or PDF files to begin solving!
           </p>
-          <p className="text-sm text-gray-500 mt-1">
-            We parse your documents to extract text, not evaluate content
-          </p>
         </header>
 
         <main>
