@@ -31,12 +31,7 @@ load_dotenv()
 
 # Initializes Flask App and Cross Origin Resource Sharing
 app = Flask(__name__)
-allowed_origins = [
-    "https://revision-bay.vercel.app/upload",
-    "http://localhost:3000",
-    "https://revision-backend-p35l.onrender.com",
-]
-CORS(app, resources={r"/api/*": {"origins": allowed_origins}})
+CORS(app)
 
 # A good practice to define allowed extensions
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
