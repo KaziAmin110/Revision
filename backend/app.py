@@ -74,7 +74,7 @@ try:
     # Retrieves Google Vision and Gemini Clients
     vision_client = vision.ImageAnnotatorClient()
     gemini_model_pro = genai.GenerativeModel("gemini-2.5-pro") # Using gemini-2.5-pro as flash-lite is not a standard model name
-    gemini_model_flash = genai.GenerativeModel("gemini-1.5-flash") # Using gemini-1.5-flash as flash-lite is not a standard model name
+    gemini_model_flash = genai.GenerativeModel("gemini-2.5-flash-lite") # Using gemini-1.5-flash as flash-lite is not a standard model name
 except Exception as e:
     print(f"FATAL: Could not initialize Google API clients: {e}")
     exit()
