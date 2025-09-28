@@ -34,6 +34,7 @@ app = Flask(__name__)
 allowed_origins = [
     "https://revision-bay.vercel.app/",
     "http://localhost:3000",
+    "https://revision-backend-p35l.onrender.com",
 ]
 CORS(app, resources={r"/api/*": {"origins": allowed_origins}})
 
